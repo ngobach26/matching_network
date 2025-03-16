@@ -1,0 +1,6 @@
+development:
+  clients:
+    default:
+      uri: <%= ENV['MONGO_URI'] || 'mongodb://localhost:27017/user_service' %>
+      options:
+        server_selection_timeout: 5
