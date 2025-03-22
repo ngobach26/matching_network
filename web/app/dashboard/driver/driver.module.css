@@ -1,0 +1,260 @@
+.container {
+  padding: 24px;
+  max-width: 1200px;
+}
+
+.statusCard {
+  margin-bottom: 16px;
+}
+
+.statusCardContent {
+  padding: 16px;
+}
+
+.statusHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.driverStatus {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.driverAvatar {
+  background-color: #2196f3;
+}
+
+.statusText {
+  font-weight: 500;
+}
+
+.statusSwitch {
+  margin-right: 0;
+}
+
+.divider {
+  margin: 16px 0;
+}
+
+.statsContainer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+.statItem {
+  text-align: center;
+  flex: 1;
+}
+
+.ridesCard {
+  height: 100%;
+}
+
+.ridesCardContent {
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.tabs {
+  margin-bottom: 16px;
+}
+
+.tabContent {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0 16px 16px;
+}
+
+.requestsList {
+  padding: 0;
+}
+
+.requestItem {
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.riderInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ratingContainer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ratingIcon {
+  color: #ffc107;
+  font-size: 16px;
+}
+
+.locationInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.pickupIcon {
+  color: #4caf50;
+  margin-top: 2px;
+}
+
+.dropoffIcon {
+  color: #f44336;
+  margin-top: 2px;
+}
+
+.locationText {
+  flex-grow: 1;
+}
+
+.tripInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.distanceText {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.fareText {
+  font-weight: 600;
+  color: #2196f3;
+}
+
+.emptyState {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  text-align: center;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.activeRideCard {
+  height: 100%;
+}
+
+.activeRideHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.riderInfoContainer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.riderAvatar {
+  width: 48px;
+  height: 48px;
+}
+
+.fareContainer {
+  text-align: right;
+}
+
+.fareAmount {
+  color: #2196f3;
+  font-weight: 600;
+}
+
+.rideDetails {
+  margin: 16px 0;
+}
+
+.locationDetail {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.locationIconContainer {
+  margin-top: 4px;
+}
+
+.locationTextContainer {
+  flex-grow: 1;
+}
+
+.tripStats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.tripStat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.rideActions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.actionButton {
+  background-color: rgba(33, 150, 243, 0.1);
+}
+
+.dialogRiderInfo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.dialogRiderAvatar {
+  width: 48px;
+  height: 48px;
+}
+
+.dialogRideDetails {
+  margin: 16px 0;
+}
+
+.dialogTripInfo {
+  display: flex;
+  justify-content: space-between;
+  margin: 16px 0;
+}
+
+.tripDetail {
+  text-align: center;
+}
+
+.dialogNote {
+  margin-top: 16px;
+  text-align: center;
+  font-style: italic;
+}
+
+.dialogActions {
+  padding: 16px;
+}
+

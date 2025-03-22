@@ -1,0 +1,108 @@
+.dashboardContainer {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logoText {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: hsl(var(--primary));
+}
+
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid hsl(var(--border));
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.userName {
+  font-weight: 500;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userEmail {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: hsl(var(--background));
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  padding: 0 1rem;
+  border-bottom: 1px solid hsl(var(--border));
+  background-color: hsl(var(--background));
+}
+
+.mobileUserProfile {
+  display: block;
+}
+
+.content {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.drawer {
+  width: 240px;
+}
+
+.drawerPaper {
+  width: 240px;
+}
+
+.content {
+  flex-grow: 1;
+  padding: 24px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 8px;
+}
+
+@media (min-width: 768px}) {
+  .mobileUserProfile {
+    display: none;
+  }
+}
+

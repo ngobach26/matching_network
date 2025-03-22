@@ -1,0 +1,102 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.paper {
+  padding: 32px;
+  width: 100%;
+  border-radius: 12px;
+}
+
+.title {
+  margin-bottom: 8px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.rolesGrid {
+  margin-bottom: 32px;
+}
+
+.roleCard {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.roleCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.selectedCard {
+  border-color: #2196f3;
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+.userRoleCard {
+  border-color: #4caf50;
+  background-color: rgba(76, 175, 80, 0.05);
+  cursor: default;
+}
+
+.roleCardContent {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px 16px;
+}
+
+.roleIconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: rgba(33, 150, 243, 0.1);
+  margin-bottom: 16px;
+  color: #2196f3;
+}
+
+.roleTitle {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.roleDescription {
+  flex-grow: 1;
+}
+
+.roleCardActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+}
+
+.continueButton {
+  min-width: 200px;
+  height: 48px;
+}
+
