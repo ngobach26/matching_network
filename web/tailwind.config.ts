@@ -1,13 +1,15 @@
 import type { Config } from "tailwindcss"
 
-const config: Config = {
+const config = {
   darkMode: ["class"],
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
     "*.{js,ts,jsx,tsx,mdx}",
   ],
+  prefix: "",
   theme: {
     container: {
       center: true,
@@ -51,14 +53,6 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background, var(--background)))",
-          foreground: "hsl(var(--sidebar-foreground, var(--foreground)))",
-          border: "hsl(var(--sidebar-border, var(--border)))",
-          accent: "hsl(var(--sidebar-accent, var(--muted)))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground, var(--muted-foreground)))",
-          ring: "hsl(var(--sidebar-ring, var(--ring)))",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -82,7 +76,7 @@ const config: Config = {
     },
   },
   plugins: [require("tailwindcss-animate")],
-}
+} satisfies Config
 
 export default config
 

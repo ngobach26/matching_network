@@ -1,267 +1,485 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Box, Typography, Grid, Card, CardContent, CircularProgress } from "@mui/material"
-import {
-  PeopleAlt as UsersIcon,
-  DirectionsCar as RideIcon,
-  MenuBook as PaperIcon,
-  Work as JobIcon,
-  School as MentorshipIcon,
-} from "@mui/icons-material"
-import { mockAdminStats } from "@/mocks/admin"
-import AdminLayout from "@/components/admin/AdminLayout"
-import styles from "./admin.module.css"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Slider } from "@/components/ui/slider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Users, Car, FileText, Briefcase, UserPlus, Edit, Trash, ArrowLeft } from "lucide-react"
+import { ThemeToggle } from "@/components/theme-toggle"
+// Import the MobileNav component
+import { MobileNav } from "@/components/MobileNav"
 
-export default function AdminDashboardPage() {
-  const [isLoading, setIsLoading] = useState(true)
-  const [stats, setStats] = useState<any>(null)
+export default function AdminPage() {
+  const [matchingAlgorithm, setMatchingAlgorithm] = useState("proximity")
+  const [proximityWeight, setProximityWeight] = useState([70])
+  const [ratingWeight, setRatingWeight] = useState([50])
+  const [priceWeight, setPriceWeight] = useState([30])
+  const router = useRouter()
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true)
-
-      try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        setStats(mockAdminStats)
-      } catch (error) {
-        console.error("Error fetching admin stats:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [])
-
-  if (isLoading) {
-    return (
-      <AdminLayout>
-        <Box className={styles.loadingContainer}>
-          <CircularProgress />
-        </Box>
-      </AdminLayout>
-    )
-  }
-
+  // Add the MobileNav component to the return statement
   return (
-    <AdminLayout>
-      <Box className={styles.container}>
-        <Typography variant="h4" component="h1" className={styles.title}>
-          Admin Dashboard
-        </Typography>
-        <Typography variant="body1" color="textSecondary" className={styles.subtitle}>
-          Overview of platform activity and statistics
-        </Typography>
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="md:hidden">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button variant="outline" onClick={() => router.push("/dashboard")} className="hidden md:flex">
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
 
-        <Grid container spacing={3} className={styles.statsGrid}>
-          <Grid item xs={12} sm={6} md={4}>
-            <Card className={styles.statCard}>
-              <CardContent className={styles.statCardContent}>
-                <Box className={styles.statIcon} sx={{ backgroundColor: "rgba(33, 150, 243, 0.1)" }}>
-                  <UsersIcon sx={{ color: "#2196f3" }} />
-                </Box>
-                <Box className={styles.statInfo}>
-                  <Typography variant="h5" className={styles.statValue}>
-                    {stats.usersByRole.rider +
-                      stats.usersByRole.driver +
-                      stats.usersByRole.reviewer +
-                      stats.usersByRole.candidate +
-                      stats.usersByRole.mentor +
-                      stats.usersByRole.mentee}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" className={styles.statLabel}>
-                    Total Users
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Card>
+          <CardContent className="p-6 flex flex-col items-center justify-center">
+            <div className="rounded-full bg-primary/20 p-3 mb-3">
+              <Users className="h-6 w-6 text-primary" />
+            </div>
+            <span className="text-2xl font-bold">248</span>
+            <span className="text-sm text-muted-foreground">Total Users</span>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6 flex flex-col items-center justify-center">
+            <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3 mb-3">
+              <Car className="h-6 w-6 text-blue-500 dark:text-blue-400" />
+            </div>
+            <span className="text-2xl font-bold">124</span>
+            <span className="text-sm text-muted-foreground">Active Drivers</span>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6 flex flex-col items-center justify-center">
+            <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3 mb-3">
+              <FileText className="h-6 w-6 text-green-500 dark:text-green-400" />
+            </div>
+            <span className="text-2xl font-bold">56</span>
+            <span className="text-sm text-muted-foreground">Paper Reviews</span>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6 flex flex-col items-center justify-center">
+            <div className="rounded-full bg-purple-100 dark:bg-purple-900/30 p-3 mb-3">
+              <Briefcase className="h-6 w-6 text-purple-500 dark:text-purple-400" />
+            </div>
+            <span className="text-2xl font-bold">89</span>
+            <span className="text-sm text-muted-foreground">Job Applications</span>
+          </CardContent>
+        </Card>
+      </div>
 
-          <Grid item xs={12} sm={6} md={4}>
-            <Card className={styles.statCard}>
-              <CardContent className={styles.statCardContent}>
-                <Box className={styles.statIcon} sx={{ backgroundColor: "rgba(76, 175, 80, 0.1)" }}>
-                  <RideIcon sx={{ color: "#4caf50" }} />
-                </Box>
-                <Box className={styles.statInfo}>
-                  <Typography variant="h5" className={styles.statValue}>
-                    {stats.matchesByScenario["ride-sharing"]}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" className={styles.statLabel}>
-                    Ride Matches
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+      <Tabs defaultValue="users" className="space-y-6">
+        <TabsList className="grid grid-cols-4 w-full max-w-md mx-auto">
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="entities">Entities</TabsTrigger>
+          <TabsTrigger value="matching">Matching</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
 
-          <Grid item xs={12} sm={6} md={4}>
-            <Card className={styles.statCard}>
-              <CardContent className={styles.statCardContent}>
-                <Box className={styles.statIcon} sx={{ backgroundColor: "rgba(156, 39, 176, 0.1)" }}>
-                  <PaperIcon sx={{ color: "#9c27b0" }} />
-                </Box>
-                <Box className={styles.statInfo}>
-                  <Typography variant="h5" className={styles.statValue}>
-                    {stats.matchesByScenario["paper-review"]}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" className={styles.statLabel}>
-                    Paper Reviews
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+        <TabsContent value="users">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>User Management</CardTitle>
+                  <CardDescription>Manage platform users and their roles</CardDescription>
+                </div>
+                <Button>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add User
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <Input placeholder="Search users..." className="max-w-sm" />
+                <Select defaultValue="all">
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="rider">Rider</SelectItem>
+                    <SelectItem value="driver">Driver</SelectItem>
+                    <SelectItem value="reviewer">Reviewer</SelectItem>
+                    <SelectItem value="candidate">Candidate</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <Grid item xs={12} sm={6} md={4}>
-            <Card className={styles.statCard}>
-              <CardContent className={styles.statCardContent}>
-                <Box className={styles.statIcon} sx={{ backgroundColor: "rgba(255, 152, 0, 0.1)" }}>
-                  <JobIcon sx={{ color: "#ff9800" }} />
-                </Box>
-                <Box className={styles.statInfo}>
-                  <Typography variant="h5" className={styles.statValue}>
-                    {stats.matchesByScenario["job-matching"]}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" className={styles.statLabel}>
-                    Job Matches
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Roles</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">John Doe</TableCell>
+                      <TableCell>john.doe@example.com</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          <Badge variant="outline" className="bg-primary/10 text-primary">
+                            Rider
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                          >
+                            Driver
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className="bg-green-500">Active</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-red-500">
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Jane Smith</TableCell>
+                      <TableCell>jane.smith@example.com</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          <Badge
+                            variant="outline"
+                            className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                          >
+                            Reviewer
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className="bg-green-500">Active</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-red-500">
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Robert Johnson</TableCell>
+                      <TableCell>robert.j@example.com</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          <Badge
+                            variant="outline"
+                            className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+                          >
+                            Candidate
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className="bg-yellow-500">Pending</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-red-500">
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <div className="text-sm text-muted-foreground">Showing 3 of 248 users</div>
+              <div className="flex gap-1">
+                <Button variant="outline" size="sm" disabled>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm">
+                  Next
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+        </TabsContent>
 
-          <Grid item xs={12} sm={6} md={4}>
-            <Card className={styles.statCard}>
-              <CardContent className={styles.statCardContent}>
-                <Box className={styles.statIcon} sx={{ backgroundColor: "rgba(244, 67, 54, 0.1)" }}>
-                  <MentorshipIcon sx={{ color: "#f44336" }} />
-                </Box>
-                <Box className={styles.statInfo}>
-                  <Typography variant="h5" className={styles.statValue}>
-                    {stats.matchesByScenario["mentorship"]}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" className={styles.statLabel}>
-                    Mentorships
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+        <TabsContent value="entities">
+          <Card>
+            <CardHeader>
+              <CardTitle>Entity Management</CardTitle>
+              <CardDescription>Manage drivers, ride requests, papers, and jobs</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="drivers">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="drivers">Drivers</TabsTrigger>
+                  <TabsTrigger value="rides">Ride Requests</TabsTrigger>
+                  <TabsTrigger value="papers">Papers</TabsTrigger>
+                  <TabsTrigger value="jobs">Jobs</TabsTrigger>
+                </TabsList>
 
-          <Grid item xs={12} sm={6} md={4}>
-            <Card className={styles.statCard}>
-              <CardContent className={styles.statCardContent}>
-                <Box className={styles.statIcon} sx={{ backgroundColor: "rgba(0, 150, 136, 0.1)" }}>
-                  <UsersIcon sx={{ color: "#009688" }} />
-                </Box>
-                <Box className={styles.statInfo}>
-                  <Typography variant="h5" className={styles.statValue}>
-                    {stats.activeUsers}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" className={styles.statLabel}>
-                    Active Users
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+                <TabsContent value="drivers">
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Vehicle</TableHead>
+                          <TableHead>License</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Rating</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-medium">Michael Johnson</TableCell>
+                          <TableCell>Toyota Camry (White)</TableCell>
+                          <TableCell>DL-12345</TableCell>
+                          <TableCell>
+                            <Badge className="bg-green-500">Active</Badge>
+                          </TableCell>
+                          <TableCell>4.8/5</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-red-500">
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">Sarah Williams</TableCell>
+                          <TableCell>Honda Civic (Blue)</TableCell>
+                          <TableCell>DL-67890</TableCell>
+                          <TableCell>
+                            <Badge className="bg-green-500">Active</Badge>
+                          </TableCell>
+                          <TableCell>4.6/5</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-red-500">
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
 
-        <Grid container spacing={3} className={styles.chartsGrid}>
-          <Grid item xs={12} md={6}>
-            <Card className={styles.chartCard}>
-              <CardContent>
-                <Typography variant="h6" className={styles.chartTitle}>
-                  Users by Role
-                </Typography>
-                <Box className={styles.chartContainer}>
-                  {/* In a real app, you would use a chart library here */}
-                  <Box className={styles.mockChart}>
-                    {Object.entries(stats.usersByRole).map(([role, count]: [string, any]) => (
-                      <Box key={role} className={styles.mockChartItem}>
-                        <Typography variant="body2" className={styles.mockChartLabel}>
-                          {role.charAt(0).toUpperCase() + role.slice(1)}
-                        </Typography>
-                        <Box className={styles.mockChartBar}>
-                          <Box
-                            className={styles.mockChartBarFill}
-                            sx={{
-                              width: `${(count / Object.values(stats.usersByRole).reduce((a: any, b: any) => a + b, 0)) * 100}%`,
-                              backgroundColor:
-                                role === "rider"
-                                  ? "#2196f3"
-                                  : role === "driver"
-                                    ? "#4caf50"
-                                    : role === "reviewer"
-                                      ? "#9c27b0"
-                                      : role === "candidate"
-                                        ? "#ff9800"
-                                        : role === "mentor"
-                                          ? "#f44336"
-                                          : "#009688",
-                            }}
-                          />
-                        </Box>
-                        <Typography variant="body2" className={styles.mockChartValue}>
-                          {count}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+                <TabsContent value="rides">
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Rider</TableHead>
+                          <TableHead>Driver</TableHead>
+                          <TableHead>Pickup</TableHead>
+                          <TableHead>Destination</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-medium">RID-1234</TableCell>
+                          <TableCell>John Doe</TableCell>
+                          <TableCell>Michael Johnson</TableCell>
+                          <TableCell>123 Main St</TableCell>
+                          <TableCell>456 Park Ave</TableCell>
+                          <TableCell>
+                            <Badge className="bg-blue-500">In Transit</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">RID-5678</TableCell>
+                          <TableCell>Alice Brown</TableCell>
+                          <TableCell>Sarah Williams</TableCell>
+                          <TableCell>789 Oak St</TableCell>
+                          <TableCell>101 Pine Ave</TableCell>
+                          <TableCell>
+                            <Badge className="bg-green-500">Completed</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <Grid item xs={12} md={6}>
-            <Card className={styles.chartCard}>
-              <CardContent>
-                <Typography variant="h6" className={styles.chartTitle}>
-                  Matches by Scenario
-                </Typography>
-                <Box className={styles.chartContainer}>
-                  {/* In a real app, you would use a chart library here */}
-                  <Box className={styles.mockChart}>
-                    {Object.entries(stats.matchesByScenario).map(([scenario, count]: [string, any]) => (
-                      <Box key={scenario} className={styles.mockChartItem}>
-                        <Typography variant="body2" className={styles.mockChartLabel}>
-                          {scenario
-                            .split("-")
-                            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                            .join(" ")}
-                        </Typography>
-                        <Box className={styles.mockChartBar}>
-                          <Box
-                            className={styles.mockChartBarFill}
-                            sx={{
-                              width: `${(count / Object.values(stats.matchesByScenario).reduce((a: any, b: any) => a + b, 0)) * 100}%`,
-                              backgroundColor:
-                                scenario === "ride-sharing"
-                                  ? "#2196f3"
-                                  : scenario === "paper-review"
-                                    ? "#9c27b0"
-                                    : scenario === "job-matching"
-                                      ? "#ff9800"
-                                      : "#f44336",
-                            }}
-                          />
-                        </Box>
-                        <Typography variant="body2" className={styles.mockChartValue}>
-                          {count}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Box>
-    </AdminLayout>
+        <TabsContent value="matching">
+          <Card>
+            <CardHeader>
+              <CardTitle>Matching Configuration</CardTitle>
+              <CardDescription>Configure the matching algorithm and parameters</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="algorithm">Matching Algorithm</Label>
+                <Select value={matchingAlgorithm} onValueChange={setMatchingAlgorithm}>
+                  <SelectTrigger id="algorithm">
+                    <SelectValue placeholder="Select algorithm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="proximity">Proximity-based</SelectItem>
+                    <SelectItem value="rating">Rating-based</SelectItem>
+                    <SelectItem value="hybrid">Hybrid (Proximity + Rating)</SelectItem>
+                    <SelectItem value="custom">Custom Weighted</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {matchingAlgorithm === "custom" && (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label htmlFor="proximityWeight">Proximity Weight</Label>
+                      <span className="text-sm text-muted-foreground">{proximityWeight}%</span>
+                    </div>
+                    <Slider
+                      id="proximityWeight"
+                      value={proximityWeight}
+                      onValueChange={setProximityWeight}
+                      max={100}
+                      step={5}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label htmlFor="ratingWeight">Rating Weight</Label>
+                      <span className="text-sm text-muted-foreground">{ratingWeight}%</span>
+                    </div>
+                    <Slider id="ratingWeight" value={ratingWeight} onValueChange={setRatingWeight} max={100} step={5} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label htmlFor="priceWeight">Price Weight</Label>
+                      <span className="text-sm text-muted-foreground">{priceWeight}%</span>
+                    </div>
+                    <Slider id="priceWeight" value={priceWeight} onValueChange={setPriceWeight} max={100} step={5} />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="maxDistance">Maximum Matching Distance (miles)</Label>
+                <Input id="maxDistance" type="number" defaultValue="10" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="timeout">Matching Timeout (seconds)</Label>
+                <Input id="timeout" type="number" defaultValue="30" />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button>Save Configuration</Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <Card>
+            <CardHeader>
+              <CardTitle>Platform Settings</CardTitle>
+              <CardDescription>Configure global platform settings</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="platformName">Platform Name</Label>
+                <Input id="platformName" defaultValue="Multi-Role Platform" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="supportEmail">Support Email</Label>
+                <Input id="supportEmail" type="email" defaultValue="support@example.com" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="maintenanceMode">Maintenance Mode</Label>
+                <Select defaultValue="off">
+                  <SelectTrigger id="maintenanceMode">
+                    <SelectValue placeholder="Select mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="off">Off</SelectItem>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="on">On (Emergency)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="defaultTheme">Default Theme</Label>
+                <Select defaultValue="system">
+                  <SelectTrigger id="defaultTheme">
+                    <SelectValue placeholder="Select theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Light</SelectItem>
+                    <SelectItem value="dark">Dark</SelectItem>
+                    <SelectItem value="system">System</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button>Save Settings</Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      <MobileNav />
+    </div>
   )
 }
 

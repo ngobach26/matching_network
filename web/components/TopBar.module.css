@@ -1,0 +1,78 @@
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 64px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: #ff8c00;
+  text-decoration: none;
+}
+
+.logoIcon {
+  color: #ff8c00;
+}
+
+.navLinks {
+  display: flex;
+  gap: 16px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.searchInput {
+  width: 300px;
+}
+
+.mobileMenuButton {
+  display: none;
+}
+
+.roleButton {
+  background-color: #ff8c00;
+  color: white;
+}
+
+.roleButton:hover {
+  background-color: #e67e00;
+}
+
+@media (max-width: 768px) {
+  .navLinks {
+    display: none;
+  }
+
+  .searchInput {
+    display: none;
+  }
+
+  .mobileMenuButton {
+    display: block;
+  }
+}
+
+.dark .topBar {
+  background-color: #121212;
+  box-shadow: 0 1px 3px rgba(255, 255, 255, 0.1);
+}
+
+.dark .logo {
+  color: #ff8c00;
+}
+

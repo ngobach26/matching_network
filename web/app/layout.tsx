@@ -1,35 +1,31 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter"
-import { ThemeProvider } from "@mui/material/styles"
-import CssBaseline from "@mui/material/CssBaseline"
-import { AuthProvider } from "@/contexts/AuthContext"
-import theme from "@/theme"
-import "./globals.css"
+import { RoleProvider } from "@/context/role-context"
+import { ThemeProvider } from "@/components/ThemeProvider"
+import { NotificationProvider } from "@/context/notification-context"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Multi-Scenario Matching Platform",
-  description: "A platform for matching users across multiple scenarios",
+  title: "Multi-Role Platform",
+  description: "A platform where users can have multiple roles",
     generator: 'v0.dev'
 }
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <AppRouterCacheProvider>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <AuthProvider>{children}</AuthProvider>
-          </ThemeProvider>
-        </AppRouterCacheProvider>
+        <ThemeProvider>
+          <RoleProvider>
+            <NotificationProvider>{children}</NotificationProvider>
+          </RoleProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
