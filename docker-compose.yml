@@ -54,10 +54,7 @@ services:
       - app_network
       
   web:
-    container_name: web
-    build:
-      context: ./web
-      dockerfile: Dockerfile.dev
+    build: ./web
     ports:
       - "3001:3000"
     volumes:
@@ -65,11 +62,7 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-    depends_on:
-      - user-service
-      - matching-service
-    networks:
-      - app_network
+    command: npm run dev
 
 volumes:
   mongo_data:
