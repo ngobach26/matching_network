@@ -1,6 +1,27 @@
 version: "3.8"
 
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: user_service_development
+      MYSQL_USER: user_service
+      MYSQL_PASSWORD: user_service_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   mongo:
     image: mongo:latest
     container_name: mongo
@@ -23,20 +44,18 @@ services:
     container_name: user_service
     restart: always
     depends_on:
-      mongo:
+      mysql:
         condition: service_healthy
     ports:
       - "3000:80"
     environment:
-      MONGO_URI: mongodb://mongo:27017/user_service
-      JWT_SECRET_KEY: 5266f1f0a81d5a100599bf5ddc57de1d80d4a40c3d539ec4b49971c5fac1107ca23cc5998f5ee61f895d7a4b6ffdbd4a9389ee4ee1e90144e759a5a98720aa73785286d3b5c4b972ad8e26f4d07cbc90feb9b7b9090b0453aa278452c7f749f67ad64b7727f0660ec683564b4654e384bd247b15f1551f056c37509cf900dc7ed19cc57a23825ed31fb0ed65da3f2fe35a42e2f6ab69f7370eaaac9131bd5cc391c5363214840f154d70bbe95cd7a2d73bf71ad79d533a5b5b723a4a8b9a610ab42d5810a3447fc41fae8c1e8ff1b709fe4cc4ef47231680ba5c14abb979c1fa6dfbec688286f25f4cfba9f72c7f2fb6d9e5d0685f4c099ca3e7b19fee75a7aa
       RAILS_ENV: development
     volumes:
       - ./user_service:/rails
       - /rails/vendor
     networks:
       - app_network
-  
+
   matching-service:
     build: ./matching_service
     container_name: matching_service
@@ -47,12 +66,12 @@ services:
       - "8001:8001"
     environment:
       MONGO_URI: mongodb://mongo:27017/matching_service
-      JWT_SECRET_KEY: 5266f1f0a81d5a100599bf5ddc57de1d80d4a40c3d539ec4b49971c5fac1107ca23cc5998f5ee61f895d7a4b6ffdbd4a9389ee4ee1e90144e759a5a98720aa73785286d3b5c4b972ad8e26f4d07cbc90feb9b7b9090b0453aa278452c7f749f67ad64b7727f0660ec683564b4654e384bd247b15f1551f056c37509cf900dc7ed19cc57a23825ed31fb0ed65da3f2fe35a42e2f6ab69f7370eaaac9131bd5cc391c5363214840f154d70bbe95cd7a2d73bf71ad79d533a5b5b723a4a8b9a610ab42d5810a3447fc41fae8c1e8ff1b709fe4cc4ef47231680ba5c14abb979c1fa6dfbec688286f25f4cfba9f72c7f2fb6d9e5d0685f4c099ca3e7b19fee75a7aa
+      JWT_SECRET_KEY: your_jwt_key
     volumes:
       - ./matching_service:/app
     networks:
       - app_network
-      
+
   web:
     build: ./web
     ports:
@@ -65,6 +84,7 @@ services:
     command: npm run dev
 
 volumes:
+  mysql_data:
   mongo_data:
   mongo_config:
 
