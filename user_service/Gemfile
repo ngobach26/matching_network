@@ -14,7 +14,7 @@ gem "turbo-rails"
 gem "stimulus-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
-gem "mongoid", "~> 8.0"              # Sử dụng MongoDB
+gem 'mysql2', '~> 0.5.6'
 gem "rack-cors"                      # Hỗ trợ CORS (cho frontend)
 gem "devise"                         # Quản lý xác thực
 gem "devise-jwt"                    # Xác thực JWT token
