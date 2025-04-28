@@ -16,22 +16,25 @@ WORKDIR /rails
 
 # Install base packages
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libjemalloc2 && \
+    apt-get install --no-install-recommends -y curl default-mysql-client libjemalloc2 libvips && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
-# Set production environment
-ENV RAILS_ENV="production" \
+# Set environment
+ENV RAILS_ENV="development" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_PATH="/usr/local/bundle" \
     BUNDLE_WITHOUT="development"
+    
+RUN mkdir -p /usr/local/bundle && chmod -R 777 /usr/local/bundle
+
 
 # Throw-away build stage to reduce size of final image
 FROM base AS build
 
 # Install packages needed to build gems
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential git libyaml-dev pkg-config && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+    apt-get install --no-install-recommends -y build-essential default-libmysqlclient-dev git libyaml-dev pkg-config libpq-dev && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives 
 
 # Install application gems
 COPY Gemfile Gemfile.lock ./
@@ -45,9 +48,6 @@ COPY . .
 # Precompile bootsnap code for faster boot times
 RUN bundle exec bootsnap precompile app/ lib/
 
-# Precompiling assets for production without requiring secret RAILS_MASTER_KEY
-RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
-
 
 
 
@@ -59,14 +59,14 @@ COPY --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --from=build /rails /rails
 
 # Run and own only the runtime files as a non-root user for security
-RUN groupadd --system --gid 1000 rails && \
-    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
-    chown -R rails:rails log tmp
-USER 1000:1000
+# RUN groupadd --system --gid 1000 rails && \
+#     useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+#     chown -R rails:rails db log storage tmp
+# USER 1000:1000
 
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
 # Start server via Thruster by default, this can be overwritten at runtime
 EXPOSE 80
-CMD ["./bin/thrust", "./bin/rails", "server"]
+CMD ["./bin/thrust", "./bin/rails", "server","-b", "0.0.0.0", "-p", "3000"]

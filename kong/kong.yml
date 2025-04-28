@@ -1,0 +1,134 @@
+_format_version: "3.0"
+_transform: true
+
+consumers:
+  - username: web-client
+    custom_id: nextjs_web
+    tags: [nextjs]
+
+jwt_secrets:
+  - consumer: web-client
+    key: authentication-key
+    secret: 860ab97ead6d44a5665bab9fea50987b6251f15b2a6011001686a3d6f571570f05bbfc403b88defd06eab6a1b172fd10ad758f60ead2707bba31e0f2ba26ff62
+    algorithm: HS256
+
+upstreams:
+  - name: users_upstream
+    targets:
+      - target: user-service:3000
+  - name: matching_upstream
+    targets:
+      - target: matching-service:8080
+
+services:
+  - name: user-service
+    host: users_upstream
+    protocol: http
+    routes:
+      - name: user-service-auth
+        paths:
+          - "/api/users/login"
+        methods:
+          - POST
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /login
+          - name: cors
+            config:
+              origins:
+                - "*"
+              methods:
+                - GET
+                - POST
+                - PUT
+                - PATCH
+                - DELETE
+                - OPTIONS
+              headers:
+                - "*"
+              credentials: true
+              preflight_continue: false
+
+      - name: user-service-registration
+        paths:
+          - "/api/users/signup"
+        methods:
+          - POST
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /signup
+          - name: cors
+            config:
+              origins:
+                - "*"
+              methods:
+                - GET
+                - POST
+                - PUT
+                - PATCH
+                - DELETE
+                - OPTIONS
+              headers:
+                - "*"
+              credentials: true
+              preflight_continue: false
+
+      - name: user-service-other
+        paths: ["/api/users"]
+        strip_path: true
+        plugins:
+          - name: jwt
+            config:
+              claims_to_verify:
+                - exp
+          - name: cors
+            config:
+              origins:
+                - "*"
+              methods:
+                - GET
+                - POST
+                - PUT
+                - PATCH
+                - DELETE
+                - OPTIONS
+              headers:
+                - "*"
+              credentials: true
+              preflight_continue: false
+
+  - name: matching-service
+    host: matching_upstream
+    protocol: http
+    routes:
+      - name: matching-service-route
+        paths: ["/api/matching"]
+        strip_path: true
+        plugins:
+          - name: jwt
+            config:
+              claims_to_verify:
+                - exp
+          - name: cors
+            config:
+              origins:
+                - "*"
+              methods:
+                - GET
+                - POST
+                - PUT
+                - PATCH
+                - DELETE
+                - OPTIONS
+              headers:
+                - "*"
+              credentials: true
+              preflight_continue: false
