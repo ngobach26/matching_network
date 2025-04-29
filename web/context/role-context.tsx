@@ -1,6 +1,8 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import type React from "react"
+import { createContext, useContext, useState, useEffect } from "react"
+import { userAPI } from "@/lib/api-client"
 
 export type RoleType = "rider" | "driver" | "reviewer" | "candidate"
 
@@ -10,64 +12,85 @@ export interface Role {
   data?: any
 }
 
-interface RoleContextType {
+type RoleContextType = {
   roles: Role[]
+  setRoles: React.Dispatch<React.SetStateAction<Role[]>>
+  hasRole: (roleType: RoleType) => boolean
   addRole: (role: Role) => void
-  updateRole: (type: RoleType, data: any) => void
-  removeRole: (type: RoleType) => void
-  hasRole: (type: RoleType) => boolean
-  getRoleData: (type: RoleType) => any
+  removeRole: (roleType: RoleType) => void
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined)
 
-export function RoleProvider({ children }: { children: ReactNode }) {
+export function RoleProvider({ children }: { children: React.ReactNode }) {
   const [roles, setRoles] = useState<Role[]>([])
 
-  // Load roles from localStorage on initial render
   useEffect(() => {
-    const savedRoles = localStorage.getItem("userRoles")
-    if (savedRoles) {
-      setRoles(JSON.parse(savedRoles))
+    // Load roles from localStorage on initial render
+    const storedRoles = localStorage.getItem("userRoles")
+
+    if (storedRoles) {
+      try {
+        const parsedRoles = JSON.parse(storedRoles)
+        setRoles(parsedRoles)
+      } catch (error) {
+        console.error("Error parsing stored roles:", error)
+      }
     }
+
+    // Fetch roles from API if user is logged in
+    const fetchRoles = async () => {
+      const token = localStorage.getItem("authToken")
+      const user = localStorage.getItem("user")
+
+      if (token && user) {
+        try {
+          const userData = JSON.parse(user)
+          const response = await userAPI.getRoles(userData.id)
+
+          if (response && response.roles) {
+            setRoles(response.roles)
+            localStorage.setItem("userRoles", JSON.stringify(response.roles))
+          }
+        } catch (error) {
+          console.error("Error fetching roles:", error)
+        }
+      }
+    }
+
+    fetchRoles()
   }, [])
 
-  // Save roles to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("userRoles", JSON.stringify(roles))
-  }, [roles])
+  const hasRole = (roleType: RoleType): boolean => {
+    return roles.some((role) => role.type === roleType)
+  }
 
   const addRole = (role: Role) => {
     setRoles((prev) => {
-      // Check if role already exists
-      if (prev.some((r) => r.type === role.type)) {
-        return prev.map((r) => (r.type === role.type ? role : r))
-      }
-      return [...prev, role]
+      const newRoles = [...prev, role]
+      localStorage.setItem("userRoles", JSON.stringify(newRoles))
+      return newRoles
     })
   }
 
-  const updateRole = (type: RoleType, data: any) => {
-    setRoles((prev) =>
-      prev.map((role) => (role.type === type ? { ...role, data: { ...role.data, ...data }, isComplete: true } : role)),
-    )
-  }
-
-  const removeRole = (type: RoleType) => {
-    setRoles((prev) => prev.filter((role) => role.type !== type))
-  }
-
-  const hasRole = (type: RoleType) => {
-    return roles.some((role) => role.type === type)
-  }
-
-  const getRoleData = (type: RoleType) => {
-    const role = roles.find((role) => role.type === type)
-    return role?.data
+  const removeRole = (roleType: RoleType) => {
+    setRoles((prev) => {
+      const newRoles = prev.filter((role) => role.type !== roleType)
+      localStorage.setItem("userRoles", JSON.stringify(newRoles))
+      return newRoles
+    })
   }
 
   return (
-    <RoleContext.Provider value={{ roles, addRole, updateRole, removeRole, hasRole, getRoleData }}>
+    <RoleContext.Provider
+      value={{
+        roles,
+        setRoles,
+        hasRole,
+        addRole,
+        removeRole,
+      }}
+    >
       {children}
     </RoleContext.Provider>
   )
@@ -80,4 +103,3 @@ export function useRoleContext() {
   }
   return context
 }
-

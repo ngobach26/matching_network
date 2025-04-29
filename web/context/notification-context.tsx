@@ -1,97 +1,63 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import type React from "react"
+import { createContext, useContext, useState, useEffect } from "react"
 import { format } from "date-fns"
 
+// Define the notification type
 export interface Notification {
   id: string
   title: string
   message: string
-  timestamp: Date
+  type: "info" | "success" | "warning" | "error"
   read: boolean
-  type: "ride" | "review" | "job" | "profile" | "system"
+  timestamp: Date
   actionUrl?: string
 }
 
+// Define the context type
 interface NotificationContextType {
   notifications: Notification[]
   unreadCount: number
   addNotification: (notification: Omit<Notification, "id" | "timestamp" | "read">) => void
   markAsRead: (id: string) => void
   markAllAsRead: () => void
-  clearAll: () => void
   removeNotification: (id: string) => void
+  clearAllNotifications: () => void
 }
 
+// Create the context
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
 
-// Initial mock notifications
-const initialNotifications: Notification[] = [
-  {
-    id: "1",
-    title: "New Ride Request",
-    message: "You have a new ride request from Downtown to Airport.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
-    read: false,
-    type: "ride",
-    actionUrl: "/dashboard?tab=driver",
-  },
-  {
-    id: "2",
-    title: "Paper Review Due",
-    message: 'Your review for "Machine Learning Applications" is due tomorrow.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60), // 1 hour ago
-    read: false,
-    type: "review",
-    actionUrl: "/dashboard?tab=reviewer",
-  },
-  {
-    id: "3",
-    title: "Job Match Found",
-    message: "We found a new job that matches your profile: Senior Developer at TechCorp.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 hours ago
-    read: true,
-    type: "job",
-    actionUrl: "/dashboard?tab=candidate",
-  },
-  {
-    id: "4",
-    title: "Profile Viewed",
-    message: "Your profile was viewed by 3 potential employers this week.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    read: true,
-    type: "profile",
-    actionUrl: "/profile",
-  },
-]
+// Create a provider component
+export function NotificationProvider({ children }: { children: React.ReactNode }) {
+  const [notifications, setNotifications] = useState<Notification[]>([])
 
-export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications)
-
-  // Calculate unread count
-  const unreadCount = notifications.filter((notification) => !notification.read).length
-
-  // Load notifications from localStorage on initial render
+  // Load notifications from localStorage on mount (client-side only)
   useEffect(() => {
-    const savedNotifications = localStorage.getItem("notifications")
-    if (savedNotifications) {
-      try {
-        const parsed = JSON.parse(savedNotifications)
-        // Convert string timestamps back to Date objects
-        const withDates = parsed.map((n: any) => ({
-          ...n,
-          timestamp: new Date(n.timestamp),
-        }))
-        setNotifications(withDates)
-      } catch (error) {
-        console.error("Failed to parse notifications from localStorage", error)
+    if (typeof window !== "undefined") {
+      const savedNotifications = localStorage.getItem("notifications")
+      if (savedNotifications) {
+        try {
+          const parsedNotifications = JSON.parse(savedNotifications)
+          // Convert string timestamps back to Date objects
+          const formattedNotifications = parsedNotifications.map((notification: any) => ({
+            ...notification,
+            timestamp: new Date(notification.timestamp),
+          }))
+          setNotifications(formattedNotifications)
+        } catch (error) {
+          console.error("Failed to parse notifications from localStorage:", error)
+        }
       }
     }
   }, [])
 
   // Save notifications to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem("notifications", JSON.stringify(notifications))
+    if (typeof window !== "undefined" && notifications.length > 0) {
+      localStorage.setItem("notifications", JSON.stringify(notifications))
+    }
   }, [notifications])
 
   // Add a new notification
@@ -102,7 +68,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       timestamp: new Date(),
       read: false,
     }
-
     setNotifications((prev) => [newNotification, ...prev])
   }
 
@@ -118,15 +83,21 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })))
   }
 
-  // Clear all notifications
-  const clearAll = () => {
-    setNotifications([])
-  }
-
-  // Remove a specific notification
+  // Remove a notification
   const removeNotification = (id: string) => {
     setNotifications((prev) => prev.filter((notification) => notification.id !== id))
   }
+
+  // Clear all notifications
+  const clearAllNotifications = () => {
+    setNotifications([])
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("notifications")
+    }
+  }
+
+  // Calculate unread count
+  const unreadCount = notifications.filter((notification) => !notification.read).length
 
   return (
     <NotificationContext.Provider
@@ -136,8 +107,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         addNotification,
         markAsRead,
         markAllAsRead,
-        clearAll,
         removeNotification,
+        clearAllNotifications,
       }}
     >
       {children}
@@ -145,6 +116,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// Create a hook to use the notification context
 export function useNotifications() {
   const context = useContext(NotificationContext)
   if (context === undefined) {
@@ -152,6 +124,9 @@ export function useNotifications() {
   }
   return context
 }
+
+// Add this alias for backward compatibility
+export const useNotification = useNotifications
 
 // Helper function to format notification time
 export function formatNotificationTime(date: Date): string {
@@ -170,4 +145,3 @@ export function formatNotificationTime(date: Date): string {
     return format(date, "MMM d")
   }
 }
-

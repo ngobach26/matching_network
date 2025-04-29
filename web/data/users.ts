@@ -442,4 +442,3 @@ export function getUserById(id: string): UserProfile | undefined {
 export function getUsersByRole(role: RoleType): UserProfile[] {
   return mockUsers.filter((user) => user.isPublic && user.roles.some((r) => r.type === role))
 }
-

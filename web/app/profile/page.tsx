@@ -1,318 +1,259 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import {
-  Typography,
-  Button,
-  Card,
-  CardContent,
-  CardActions,
-  TextField,
-  Grid,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Box,
-  Paper,
-} from "@mui/material"
-import {
-  Person as PersonIcon,
-  DirectionsCar as CarIcon,
-  Description as FileIcon,
-  Work as WorkIcon,
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  ArrowBack as ArrowBackIcon,
-} from "@mui/icons-material"
-import { useRoleContext, type RoleType } from "@/context/role-context"
+import { useRoleContext } from "@/context/role-context"
+import { TopBar } from "@/components/TopBar"
+import { MobileNav } from "@/components/MobileNav"
+import { RoleCard } from "@/components/role-card"
 import { RiderForm } from "@/components/role-forms/rider-form"
 import { DriverForm } from "@/components/role-forms/driver-form"
 import { ReviewerForm } from "@/components/role-forms/reviewer-form"
 import { CandidateForm } from "@/components/role-forms/candidate-form"
-import TopBar from "@/components/TopBar"
-import { useTheme } from "@/components/ThemeProvider"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { userAPI } from "@/lib/api-client"
+import { toast } from "@/components/ui/use-toast"
 import styles from "./Profile.module.css"
-// Import the MobileNav component
-import { MobileNav } from "@/components/MobileNav"
 
-export default function ProfilePage() {
-  const { roles, addRole, removeRole } = useRoleContext()
-  const [isAddRoleOpen, setIsAddRoleOpen] = useState(false)
-  const [selectedRole, setSelectedRole] = useState<RoleType | null>(null)
+export default function Profile() {
+  const { roles, setRoles } = useRoleContext()
+  const [activeTab, setActiveTab] = useState("profile")
+  const [profileData, setProfileData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    bio: "",
+  })
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const router = useRouter()
-  const { isDarkMode, toggleTheme } = useTheme()
 
-  const handleAddRole = (type: RoleType) => {
-    setSelectedRole(type)
-  }
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem("authToken")
+    if (!token) {
+      router.push("/")
+      return
+    }
 
-  const handleRoleSubmit = (data: any) => {
-    if (selectedRole) {
-      addRole({
-        type: selectedRole,
-        isComplete: true,
-        data,
+    // Fetch user profile data
+    const fetchProfileData = async () => {
+      setLoading(true)
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}")
+        const userData = await userAPI.getProfile(user.id)
+
+        setProfileData({
+          name: userData.name || "",
+          email: userData.email || "",
+          phone: userData.phone || "",
+          address: userData.address || "",
+          bio: userData.bio || "",
+        })
+      } catch (error) {
+        console.error("Failed to fetch profile data:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load profile data. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProfileData()
+  }, [router])
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}")
+      await userAPI.updateProfile(user.id, profileData)
+
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully.",
       })
-      setIsAddRoleOpen(false)
-      setSelectedRole(null)
+    } catch (error) {
+      console.error("Failed to update profile:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setSaving(false)
     }
   }
 
-  const handleRemoveRole = (type: RoleType) => {
-    removeRole(type)
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setProfileData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleGoToDashboard = () => {
-    router.push("/dashboard")
+  const handleRoleApplication = (role: string) => {
+    // In a real app, this would send an API request to apply for a role
+    toast({
+      title: "Role Application Submitted",
+      description: `Your application for the ${role} role has been submitted.`,
+    })
   }
 
-  const renderRoleForm = () => {
-    switch (selectedRole) {
-      case "rider":
-        return <RiderForm onSubmit={handleRoleSubmit} />
-      case "driver":
-        return <DriverForm onSubmit={handleRoleSubmit} />
-      case "reviewer":
-        return <ReviewerForm onSubmit={handleRoleSubmit} />
-      case "candidate":
-        return <CandidateForm onSubmit={handleRoleSubmit} />
-      default:
-        return null
-    }
-  }
-
-  const getRoleIcon = (type: RoleType) => {
-    switch (type) {
-      case "rider":
-        return <PersonIcon />
-      case "driver":
-        return <CarIcon />
-      case "reviewer":
-        return <FileIcon />
-      case "candidate":
-        return <WorkIcon />
-      default:
-        return null
-    }
-  }
-
-  const getRoleTitle = (type: RoleType) => {
-    switch (type) {
-      case "rider":
-        return "Rider"
-      case "driver":
-        return "Driver"
-      case "reviewer":
-        return "Reviewer"
-      case "candidate":
-        return "Candidate"
-      default:
-        return type
-    }
-  }
-
-  const getRoleDescription = (type: RoleType) => {
-    switch (type) {
-      case "rider":
-        return "Request rides and travel to your destinations"
-      case "driver":
-        return "Provide rides to users and earn money"
-      case "reviewer":
-        return "Review papers and provide feedback"
-      case "candidate":
-        return "Apply for jobs and track applications"
-      default:
-        return ""
-    }
-  }
-
-  // Add the MobileNav component to the return statement
   return (
-    <>
-      <TopBar toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconButton size="small" onClick={() => router.back()} sx={{ display: { xs: "flex", md: "none" } }}>
-              <ArrowBackIcon />
-            </IconButton>
-            <Typography variant="h4">Your Profile</Typography>
-          </Box>
+    <div className={styles.profileContainer}>
+      <TopBar />
 
-          <Box>
-            {roles.length > 0 && (
-              <Button variant="contained" onClick={handleGoToDashboard} color="primary">
-                Go to Dashboard
-              </Button>
-            )}
-          </Box>
-        </div>
+      <main className={styles.mainContent}>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
+          <TabsList className={styles.tabsList}>
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="roles">Roles</TabsTrigger>
+          </TabsList>
 
-        <div className={styles.section}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Personal Information
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <TextField label="First Name" defaultValue="John" fullWidth margin="normal" />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField label="Last Name" defaultValue="Doe" fullWidth margin="normal" />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField label="Email" type="email" defaultValue="john.doe@example.com" fullWidth margin="normal" />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField label="Phone" defaultValue="+1 (555) 123-4567" fullWidth margin="normal" />
-                </Grid>
-              </Grid>
-            </CardContent>
-            <CardActions>
-              <Button variant="contained" color="primary">
-                Save Changes
-              </Button>
-            </CardActions>
-          </Card>
-        </div>
-
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <Typography variant="h5">Your Roles</Typography>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsAddRoleOpen(true)} color="primary">
-              Add Role
-            </Button>
-          </div>
-
-          {roles.length === 0 ? (
+          <TabsContent value="profile" className={styles.tabContent}>
             <Card>
-              <CardContent className={styles.emptyState}>
-                <Typography color="textSecondary" paragraph>
-                  You haven't added any roles yet.
-                </Typography>
-                <Typography color="textSecondary" paragraph>
-                  Add a role to access different features of the platform.
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => setIsAddRoleOpen(true)}
-                  color="primary"
-                >
-                  Add Your First Role
-                </Button>
-              </CardContent>
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
+                <CardDescription>Update your personal information</CardDescription>
+              </CardHeader>
+
+              <form onSubmit={handleProfileUpdate}>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      value={profileData.name}
+                      onChange={handleInputChange}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={profileData.email}
+                      onChange={handleInputChange}
+                      disabled={true} // Email should not be editable
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      value={profileData.phone}
+                      onChange={handleInputChange}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                      id="address"
+                      name="address"
+                      value={profileData.address}
+                      onChange={handleInputChange}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bio">Bio</Label>
+                    <Input
+                      id="bio"
+                      name="bio"
+                      value={profileData.bio}
+                      onChange={handleInputChange}
+                      disabled={loading}
+                    />
+                  </div>
+                </CardContent>
+
+                <CardFooter>
+                  <Button type="submit" disabled={loading || saving}>
+                    {saving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </CardFooter>
+              </form>
             </Card>
-          ) : (
+          </TabsContent>
+
+          <TabsContent value="roles" className={styles.tabContent}>
             <div className={styles.rolesGrid}>
-              {roles.map((role) => (
-                <Card key={role.type}>
-                  <CardContent>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        {getRoleIcon(role.type)}
-                        <Typography variant="h6">{getRoleTitle(role.type)}</Typography>
-                      </Box>
-                      <Box>
-                        {role.isComplete ? (
-                          <Paper variant="outlined" sx={{ px: 1, py: 0.5, bgcolor: "primary.main", color: "white" }}>
-                            <Typography variant="caption">Complete</Typography>
-                          </Paper>
-                        ) : (
-                          <Paper variant="outlined" sx={{ px: 1, py: 0.5 }}>
-                            <Typography variant="caption">Incomplete</Typography>
-                          </Paper>
-                        )}
-                      </Box>
-                    </Box>
+              {!roles.includes("Rider") && (
+                <RoleCard
+                  title="Rider"
+                  description="Request rides and travel to your destinations"
+                  icon="🚗"
+                  onApply={() => setActiveTab("rider-application")}
+                />
+              )}
 
-                    <Typography variant="body2" color="textSecondary" paragraph>
-                      {getRoleDescription(role.type)}
-                    </Typography>
+              {!roles.includes("Driver") && (
+                <RoleCard
+                  title="Driver"
+                  description="Drive passengers and earn money"
+                  icon="🚕"
+                  onApply={() => setActiveTab("driver-application")}
+                />
+              )}
 
-                    {role.type === "driver" && role.data && (
-                      <Box sx={{ mt: 2 }}>
-                        <Typography variant="body2">
-                          <strong>Vehicle:</strong> {role.data.vehicle}
-                        </Typography>
-                        <Typography variant="body2">
-                          <strong>License:</strong> {role.data.license}
-                        </Typography>
-                      </Box>
-                    )}
+              {!roles.includes("Reviewer") && (
+                <RoleCard
+                  title="Reviewer"
+                  description="Review driver applications"
+                  icon="📝"
+                  onApply={() => setActiveTab("reviewer-application")}
+                />
+              )}
 
-                    {role.type === "reviewer" && role.data && (
-                      <Box sx={{ mt: 2 }}>
-                        <Typography variant="body2">
-                          <strong>Expertise:</strong> {role.data.expertise}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    {role.type === "candidate" && role.data && (
-                      <Box sx={{ mt: 2 }}>
-                        <Typography variant="body2">
-                          <strong>Skills:</strong> {role.data.skills}
-                        </Typography>
-                      </Box>
-                    )}
-                  </CardContent>
-                  <CardActions>
-                    <Button
-                      startIcon={<DeleteIcon />}
-                      color="error"
-                      onClick={() => handleRemoveRole(role.type)}
-                      fullWidth
-                    >
-                      Remove Role
-                    </Button>
-                  </CardActions>
-                </Card>
-              ))}
+              {!roles.includes("Candidate") && (
+                <RoleCard
+                  title="Candidate"
+                  description="Apply to become a driver"
+                  icon="🎓"
+                  onApply={() => setActiveTab("candidate-application")}
+                />
+              )}
             </div>
-          )}
-        </div>
+          </TabsContent>
 
-        {/* Add Role Dialog */}
-        <Dialog open={isAddRoleOpen} onClose={() => setIsAddRoleOpen(false)} fullWidth maxWidth="sm">
-          <DialogTitle>{selectedRole ? `Add ${getRoleTitle(selectedRole)} Role` : "Add a New Role"}</DialogTitle>
-          <DialogContent>
-            {!selectedRole ? (
-              <div className={styles.roleSelectionGrid}>
-                <Button variant="outlined" className={styles.roleButton} onClick={() => handleAddRole("rider")}>
-                  <PersonIcon className={styles.roleIcon} />
-                  <Typography>Rider</Typography>
-                </Button>
-                <Button variant="outlined" className={styles.roleButton} onClick={() => handleAddRole("driver")}>
-                  <CarIcon className={styles.roleIcon} />
-                  <Typography>Driver</Typography>
-                </Button>
-                <Button variant="outlined" className={styles.roleButton} onClick={() => handleAddRole("reviewer")}>
-                  <FileIcon className={styles.roleIcon} />
-                  <Typography>Reviewer</Typography>
-                </Button>
-                <Button variant="outlined" className={styles.roleButton} onClick={() => handleAddRole("candidate")}>
-                  <WorkIcon className={styles.roleIcon} />
-                  <Typography>Candidate</Typography>
-                </Button>
-              </div>
-            ) : (
-              <Box sx={{ py: 2 }}>{renderRoleForm()}</Box>
-            )}
-          </DialogContent>
-          {selectedRole && (
-            <DialogActions>
-              <Button onClick={() => setSelectedRole(null)}>Back</Button>
-            </DialogActions>
-          )}
-        </Dialog>
-      </div>
+          <TabsContent value="rider-application">
+            <RiderForm onSubmit={() => handleRoleApplication("Rider")} onCancel={() => setActiveTab("roles")} />
+          </TabsContent>
+
+          <TabsContent value="driver-application">
+            <DriverForm onSubmit={() => handleRoleApplication("Driver")} onCancel={() => setActiveTab("roles")} />
+          </TabsContent>
+
+          <TabsContent value="reviewer-application">
+            <ReviewerForm onSubmit={() => handleRoleApplication("Reviewer")} onCancel={() => setActiveTab("roles")} />
+          </TabsContent>
+
+          <TabsContent value="candidate-application">
+            <CandidateForm onSubmit={() => handleRoleApplication("Candidate")} onCancel={() => setActiveTab("roles")} />
+          </TabsContent>
+        </Tabs>
+      </main>
+
       <MobileNav />
-    </>
+    </div>
   )
 }
-

@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useRoleContext } from "@/context/role-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,47 +11,100 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Car } from "lucide-react"
+import { authAPI } from "@/lib/api-client"
+import { toast } from "@/components/ui/use-toast"
+import { getCookie } from "cookies-next"
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  const { roles } = useRoleContext()
+  const { roles, setRoles } = useRoleContext()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get("redirectTo")
 
   useEffect(() => {
-    // Check if user is already logged in (from localStorage in a real app)
+    // Check if user is already logged in
+    const token = getCookie("authToken") || localStorage.getItem("authToken")
     const loggedInStatus = localStorage.getItem("isLoggedIn")
-    if (loggedInStatus === "true") {
+
+    if (token && loggedInStatus === "true") {
       setIsLoggedIn(true)
 
-      // Redirect based on roles
-      if (roles.length > 0) {
-        router.push("/dashboard")
-      } else {
-        router.push("/profile")
-      }
-    }
-  }, [roles, router])
+      // Fetch current user data including roles
+      const fetchUserData = async () => {
+        try {
+          const userData = await authAPI.getCurrentUser()
+          if (userData && userData.roles) {
+            setRoles(userData.roles)
+          }
 
-  const handleLogin = (e: React.FormEvent) => {
+          // Redirect based on roles or the redirectTo parameter
+          if (redirectTo) {
+            router.push(redirectTo)
+          } else if (userData.roles && userData.roles.length > 0) {
+            router.push("/dashboard")
+          } else {
+            router.push("/profile")
+          }
+        } catch (error) {
+          console.error("Failed to fetch user data:", error)
+          // If we can't fetch user data, clear login state
+          localStorage.removeItem("authToken")
+          localStorage.removeItem("isLoggedIn")
+          setIsLoggedIn(false)
+        }
+      }
+
+      fetchUserData()
+    }
+  }, [router, setRoles, redirectTo])
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      localStorage.setItem("isLoggedIn", "true")
-      setIsLoggedIn(true)
-      setLoading(false)
+    try {
+      // Call the login API
+      const response = await authAPI.login(email, password)
 
-      // Redirect based on roles
-      if (roles.length > 0) {
+      // Store login status and user data
+      localStorage.setItem("isLoggedIn", "true")
+      localStorage.setItem("user", JSON.stringify(response.user))
+
+      // Update roles in context
+      if (response.user && response.user.roles) {
+        setRoles(response.user.roles)
+      }
+
+      setIsLoggedIn(true)
+
+      // Show success message
+      toast({
+        title: "Login Successful",
+        description: "Welcome back!",
+      })
+
+      // Redirect based on roles or the redirectTo parameter
+      if (redirectTo) {
+        router.push(redirectTo)
+      } else if (response.user.roles && response.user.roles.length > 0) {
         router.push("/dashboard")
       } else {
         router.push("/profile")
       }
-    }, 1500)
+    } catch (error: any) {
+      console.error("Login failed:", error)
+      toast({
+        title: "Login Failed",
+        description: error.response?.data?.message || "Invalid email or password. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (isLoggedIn) {
@@ -103,14 +156,19 @@ export default function Home() {
               />
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full h-12 text-lg font-medium" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}
             </Button>
+            <p className="text-sm text-center text-muted-foreground">
+              Don't have an account?{" "}
+              <a href="/signup" className="text-primary hover:underline">
+                Sign up
+              </a>
+            </p>
           </CardFooter>
         </form>
       </Card>
     </div>
   )
 }
-

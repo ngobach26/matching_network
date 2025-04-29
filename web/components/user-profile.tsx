@@ -371,4 +371,3 @@ export function UserProfile({ user, isOpen, onClose }: UserProfileProps) {
     </Dialog>
   )
 }
-

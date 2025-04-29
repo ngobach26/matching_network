@@ -1,16 +1,24 @@
 # Use official Node.js image
 FROM node:20-alpine
 
+# Install pnpm globally
+RUN npm install -g pnpm
+
 WORKDIR /app
 
-# Install dependencies with relaxed peer checks
-COPY package.json package-lock.json* ./
-RUN npm install --legacy-peer-deps
+# Copy only lock and manifest first for efficient caching
+COPY package.json pnpm-lock.yaml ./
 
-# Copy rest of the project
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy the rest of the source code
 COPY . .
 
-RUN npm run build
+# Build the app
+RUN pnpm run build
 
-EXPOSE 3000
-CMD ["npm", "run", "start"]
+EXPOSE 30011
+
+# Start the app
+CMD ["pnpm", "run", "start"]

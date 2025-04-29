@@ -25,6 +25,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { getUsersByRole } from "@/data/users"
 import { UserProfile } from "@/components/user-profile"
+import { authAPI } from "@/lib/api-client"
+import { toast } from "@/components/ui/use-toast"
 
 export function TopBar() {
   const router = useRouter()
@@ -37,6 +39,7 @@ export function TopBar() {
   const [searchTerm, setSearchTerm] = useState("")
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   // Available roles for selection
@@ -108,6 +111,36 @@ export function TopBar() {
     setIsSearchOpen(false)
   }
 
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await authAPI.logout()
+
+      // Clear local storage
+      localStorage.removeItem("authToken")
+      localStorage.removeItem("isLoggedIn")
+      localStorage.removeItem("user")
+
+      // Redirect to login page
+      router.push("/")
+
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      })
+    } catch (error) {
+      console.error("Logout failed:", error)
+
+      // Even if the API call fails, we should still clear local storage and redirect
+      localStorage.removeItem("authToken")
+      localStorage.removeItem("isLoggedIn")
+      localStorage.removeItem("user")
+      router.push("/")
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
+
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -174,7 +207,7 @@ export function TopBar() {
                           onClick={() => handleUserClick(user.id)}
                         >
                           <Avatar className="h-8 w-8 mr-3">
-                            <AvatarImage src={user.avatarUrl} alt={user.name} />
+                            <AvatarImage src={user.avatarUrl || "/placeholder.svg"} alt={user.name} />
                             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
@@ -261,13 +294,8 @@ export function TopBar() {
                 <DropdownMenuItem onClick={() => router.push("/dashboard")}>Dashboard</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/admin")}>Admin</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    localStorage.removeItem("isLoggedIn")
-                    router.push("/")
-                  }}
-                >
-                  Log out
+                <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
+                  {isLoggingOut ? "Logging out..." : "Log out"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -364,7 +392,7 @@ export function TopBar() {
                     onClick={() => handleUserClick(user.id)}
                   >
                     <Avatar className="h-8 w-8 mr-3">
-                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      <AvatarImage src={user.avatarUrl || "/placeholder.svg"} alt={user.name} />
                       <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
@@ -412,3 +440,5 @@ export function TopBar() {
   )
 }
 
+// Add the default export that's being imported elsewhere
+export default TopBar
