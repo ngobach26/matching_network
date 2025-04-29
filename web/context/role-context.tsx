@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
-import { authAPI, userAPI } from "@/lib/api-client"
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
 export type RoleType = "rider" | "driver" | "reviewer" | "candidate"
 
@@ -12,105 +10,64 @@ export interface Role {
   data?: any
 }
 
-type RoleContextType = {
+interface RoleContextType {
   roles: Role[]
-  setRoleList: (roles: Role[] | RoleType[]) => void
-  hasRole: (roleType: RoleType) => boolean
   addRole: (role: Role) => void
-  removeRole: (roleType: RoleType) => void
+  updateRole: (type: RoleType, data: any) => void
+  removeRole: (type: RoleType) => void
+  hasRole: (type: RoleType) => boolean
+  getRoleData: (type: RoleType) => any
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined)
 
-export function RoleProvider({ children }: { children: React.ReactNode }) {
+export function RoleProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<Role[]>([])
 
+  // Load roles from localStorage on initial render
   useEffect(() => {
-    // Load roles from localStorage on initial render
-    const storedRoles = localStorage.getItem("userRoles")
-
-    if (storedRoles) {
-      try {
-        const parsedRoles = JSON.parse(storedRoles)
-        setRoles(parsedRoles)
-      } catch (error) {
-        console.error("Error parsing stored roles:", error)
-      }
+    const savedRoles = localStorage.getItem("userRoles")
+    if (savedRoles) {
+      setRoles(JSON.parse(savedRoles))
     }
-
-    // Fetch roles from API if user is logged in
-    const fetchRoles = async () => {
-      const token = localStorage.getItem("authToken")
-      const user = localStorage.getItem("user")
-
-      if (token && user) {
-        try {
-          const userData = JSON.parse(user)
-          const response = await authAPI.getCurrentUser()
-
-          if (response && response.user.roles) {
-            setRoles(response.user.roles)
-            localStorage.setItem("userRoles", JSON.stringify(response.user.roles))
-          }
-        } catch (error) {
-          console.error("Error fetching roles:", error)
-        }
-      }
-    }
-
-    fetchRoles()
   }, [])
 
-  const hasRole = (roleType: RoleType): boolean => {
-    return roles.some((role) => role.type === roleType)
-  }
-
-  const setRoleList = (rolesOrTypes: Role[] | RoleType[]) => {
-    const roles = typeof rolesOrTypes[0] === "string"
-      ? (rolesOrTypes as RoleType[]).map(createRoleFromType)
-      : (rolesOrTypes as Role[])
-  
-    setRoles(roles)
+  // Save roles to localStorage whenever they change
+  useEffect(() => {
     localStorage.setItem("userRoles", JSON.stringify(roles))
-  }
-  
-  const addRole = (roleOrType: Role | RoleType) => {
-    const role = typeof roleOrType === "string" ? createRoleFromType(roleOrType) : roleOrType
-  
+  }, [roles])
+
+  const addRole = (role: Role) => {
     setRoles((prev) => {
-      const newRoles = [...prev, role]
-      localStorage.setItem("userRoles", JSON.stringify(newRoles))
-      return newRoles
+      // Check if role already exists
+      if (prev.some((r) => r.type === role.type)) {
+        return prev.map((r) => (r.type === role.type ? role : r))
+      }
+      return [...prev, role]
     })
   }
 
-  const removeRole = (roleType: RoleType) => {
-    setRoles((prev) => {
-      const newRoles = prev.filter((role) => role.type !== roleType)
-      localStorage.setItem("userRoles", JSON.stringify(newRoles))
-      return newRoles
-    })
+  const updateRole = (type: RoleType, data: any) => {
+    setRoles((prev) =>
+      prev.map((role) => (role.type === type ? { ...role, data: { ...role.data, ...data }, isComplete: true } : role)),
+    )
   }
 
-  function createRoleFromType(roleType: RoleType): Role {
-    return {
-      type: roleType,
-      isComplete: false,
-      data: {},
-    }
+  const removeRole = (type: RoleType) => {
+    setRoles((prev) => prev.filter((role) => role.type !== type))
   }
-  
+
+  const hasRole = (type: RoleType) => {
+    return roles.some((role) => role.type === type)
+  }
+
+  const getRoleData = (type: RoleType) => {
+    const role = roles.find((role) => role.type === type)
+    return role?.data
+  }
 
   return (
-    <RoleContext.Provider
-      value={{
-        roles,
-        setRoleList,
-        hasRole,
-        addRole,
-        removeRole,
-      }}
-    >
+    <RoleContext.Provider value={{ roles, addRole, updateRole, removeRole, hasRole, getRoleData }}>
       {children}
     </RoleContext.Provider>
   )
@@ -123,3 +80,4 @@ export function useRoleContext() {
   }
   return context
 }
+

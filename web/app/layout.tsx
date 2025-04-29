@@ -3,16 +3,13 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { ThemeProvider as MuiThemeProvider } from "@/components/ThemeProvider"
 import { RoleProvider } from "@/context/role-context"
-import { NotificationProvider } from "@/context/notification-context"
-import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "RideShare - Multi-Role Platform",
-  description: "A multi-role platform for ride sharing",
+  title: "Multi-Role Platform",
+  description: "A platform where users can have multiple roles",
 }
 
 export default function RootLayout({
@@ -21,19 +18,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <MuiThemeProvider>
-            <NotificationProvider>
-              <RoleProvider>
-                {children}
-                <Toaster />
-              </RoleProvider>
-            </NotificationProvider>
-          </MuiThemeProvider>
+        <ThemeProvider>
+          <RoleProvider>{children}</RoleProvider>
         </ThemeProvider>
       </body>
     </html>
   )
 }
+

@@ -6,17 +6,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Clock, CheckCircle, XCircle } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { UserProfileButton } from "@/components/user-profile-button"
 
 interface Paper {
   id: string
   title: string
   abstract: string
-  authors: {
-    id: string
-    name: string
-  }[]
+  authors: string
   status: "pending" | "accepted" | "rejected" | "completed"
   dueDate: string
 }
@@ -28,7 +23,7 @@ export function ReviewerDashboard() {
       title: "Advances in Machine Learning for Natural Language Processing",
       abstract:
         "This paper presents a novel approach to natural language processing using advanced machine learning techniques...",
-      authors: [{ id: "user-4", name: "Robert Chen" }],
+      authors: "J. Smith, A. Johnson",
       status: "pending",
       dueDate: "2023-09-15",
     },
@@ -37,10 +32,7 @@ export function ReviewerDashboard() {
       title: "Quantum Computing: A New Paradigm",
       abstract:
         "We explore the potential of quantum computing to revolutionize computational capabilities across various domains...",
-      authors: [
-        { id: "user-1", name: "Michael Johnson" },
-        { id: "user-2", name: "Sarah Thompson" },
-      ],
+      authors: "R. Feynman, L. Susskind",
       status: "pending",
       dueDate: "2023-09-20",
     },
@@ -49,7 +41,7 @@ export function ReviewerDashboard() {
       title: "Sustainable Energy Solutions for Urban Environments",
       abstract:
         "This research investigates innovative approaches to implementing sustainable energy solutions in densely populated urban areas...",
-      authors: [{ id: "user-5", name: "Emily Davis" }],
+      authors: "E. Green, T. Eco",
       status: "completed",
       dueDate: "2023-08-30",
     },
@@ -79,8 +71,8 @@ export function ReviewerDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4 flex flex-col items-center justify-center">
-                <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-2 mb-2">
-                  <FileText className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+                <div className="rounded-full bg-blue-100 p-2 mb-2">
+                  <FileText className="h-5 w-5 text-blue-500" />
                 </div>
                 <span className="text-xl font-bold">{pendingPapers.length}</span>
                 <span className="text-xs text-muted-foreground">Pending</span>
@@ -88,8 +80,8 @@ export function ReviewerDashboard() {
             </Card>
             <Card>
               <CardContent className="p-4 flex flex-col items-center justify-center">
-                <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-2 mb-2">
-                  <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />
+                <div className="rounded-full bg-green-100 p-2 mb-2">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
                 </div>
                 <span className="text-xl font-bold">{acceptedPapers.length}</span>
                 <span className="text-xs text-muted-foreground">Accepted</span>
@@ -97,8 +89,8 @@ export function ReviewerDashboard() {
             </Card>
             <Card>
               <CardContent className="p-4 flex flex-col items-center justify-center">
-                <div className="rounded-full bg-red-100 dark:bg-red-900/30 p-2 mb-2">
-                  <XCircle className="h-5 w-5 text-red-500 dark:text-red-400" />
+                <div className="rounded-full bg-red-100 p-2 mb-2">
+                  <XCircle className="h-5 w-5 text-red-500" />
                 </div>
                 <span className="text-xl font-bold">{rejectedPapers.length}</span>
                 <span className="text-xs text-muted-foreground">Rejected</span>
@@ -106,8 +98,8 @@ export function ReviewerDashboard() {
             </Card>
             <Card>
               <CardContent className="p-4 flex flex-col items-center justify-center">
-                <div className="rounded-full bg-gray-100 dark:bg-gray-800 p-2 mb-2">
-                  <Clock className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                <div className="rounded-full bg-gray-100 p-2 mb-2">
+                  <Clock className="h-5 w-5 text-gray-500" />
                 </div>
                 <span className="text-xl font-bold">{completedPapers.length}</span>
                 <span className="text-xs text-muted-foreground">Completed</span>
@@ -140,43 +132,28 @@ export function ReviewerDashboard() {
                     <CardTitle className="text-lg">{paper.title}</CardTitle>
                     <Badge className="bg-blue-500">Pending</Badge>
                   </div>
-                  <CardDescription>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {paper.authors.map((author) => (
-                        <div key={author.id} className="flex items-center gap-1">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback>{author.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <span>{author.name}</span>
-                          <UserProfileButton
-                            userId={author.id}
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-1"
-                            label="View"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </CardDescription>
+                  <CardDescription>Authors: {paper.authors}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4">{paper.abstract}</p>
                   <div className="flex items-center text-sm">
-                    <Clock className="h-4 w-4 mr-1 text-primary" />
+                    <Clock className="h-4 w-4 mr-1 text-orange-500" />
                     <span>Due: {paper.dueDate}</span>
                   </div>
                 </CardContent>
                 <CardFooter className="flex gap-2">
                   <Button
                     variant="outline"
-                    className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                    className="w-full text-red-500 hover:text-red-700 hover:bg-red-50"
                     onClick={() => handleRejectPaper(paper.id)}
                   >
                     <XCircle className="mr-2 h-4 w-4" />
                     Reject
                   </Button>
-                  <Button className="w-full" onClick={() => handleAcceptPaper(paper.id)}>
+                  <Button
+                    className="w-full bg-orange-500 hover:bg-orange-600"
+                    onClick={() => handleAcceptPaper(paper.id)}
+                  >
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Accept
                   </Button>
@@ -201,35 +178,17 @@ export function ReviewerDashboard() {
                     <CardTitle className="text-lg">{paper.title}</CardTitle>
                     <Badge className="bg-green-500">Accepted</Badge>
                   </div>
-                  <CardDescription>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {paper.authors.map((author) => (
-                        <div key={author.id} className="flex items-center gap-1">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback>{author.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <span>{author.name}</span>
-                          <UserProfileButton
-                            userId={author.id}
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-1"
-                            label="View"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </CardDescription>
+                  <CardDescription>Authors: {paper.authors}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4">{paper.abstract}</p>
                   <div className="flex items-center text-sm">
-                    <Clock className="h-4 w-4 mr-1 text-primary" />
+                    <Clock className="h-4 w-4 mr-1 text-orange-500" />
                     <span>Due: {paper.dueDate}</span>
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full">Start Review</Button>
+                  <Button className="w-full bg-orange-500 hover:bg-orange-600">Start Review</Button>
                 </CardFooter>
               </Card>
             ))
@@ -251,7 +210,7 @@ export function ReviewerDashboard() {
                     <CardTitle className="text-lg">{paper.title}</CardTitle>
                     <Badge className="bg-red-500">Rejected</Badge>
                   </div>
-                  <CardDescription>Authors: {paper.authors.map((a) => a.name).join(", ")}</CardDescription>
+                  <CardDescription>Authors: {paper.authors}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">{paper.abstract}</p>
@@ -276,25 +235,7 @@ export function ReviewerDashboard() {
                     <CardTitle className="text-lg">{paper.title}</CardTitle>
                     <Badge className="bg-gray-500">Completed</Badge>
                   </div>
-                  <CardDescription>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {paper.authors.map((author) => (
-                        <div key={author.id} className="flex items-center gap-1">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback>{author.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <span>{author.name}</span>
-                          <UserProfileButton
-                            userId={author.id}
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-1"
-                            label="View"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </CardDescription>
+                  <CardDescription>Authors: {paper.authors}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">{paper.abstract}</p>
@@ -312,3 +253,4 @@ export function ReviewerDashboard() {
     </div>
   )
 }
+

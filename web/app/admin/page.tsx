@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,41 +10,28 @@ import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Users, Car, FileText, Briefcase, UserPlus, Edit, Trash, ArrowLeft } from "lucide-react"
-import { ThemeToggle } from "@/components/theme-toggle"
-// Import the MobileNav component
-import { MobileNav } from "@/components/MobileNav"
+import { Users, Car, FileText, Briefcase, UserPlus, Edit, Trash } from "lucide-react"
 
 export default function AdminPage() {
   const [matchingAlgorithm, setMatchingAlgorithm] = useState("proximity")
   const [proximityWeight, setProximityWeight] = useState([70])
   const [ratingWeight, setRatingWeight] = useState([50])
   const [priceWeight, setPriceWeight] = useState([30])
-  const router = useRouter()
 
-  // Add the MobileNav component to the return statement
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="md:hidden">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Button variant="outline" onClick={() => router.push("/dashboard")} className="hidden md:flex">
-            Back to Dashboard
-          </Button>
-        </div>
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <Button variant="outline" onClick={() => window.history.back()}>
+          Back to Platform
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="p-6 flex flex-col items-center justify-center">
-            <div className="rounded-full bg-primary/20 p-3 mb-3">
-              <Users className="h-6 w-6 text-primary" />
+            <div className="rounded-full bg-orange-100 p-3 mb-3">
+              <Users className="h-6 w-6 text-orange-500" />
             </div>
             <span className="text-2xl font-bold">248</span>
             <span className="text-sm text-muted-foreground">Total Users</span>
@@ -53,8 +39,8 @@ export default function AdminPage() {
         </Card>
         <Card>
           <CardContent className="p-6 flex flex-col items-center justify-center">
-            <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3 mb-3">
-              <Car className="h-6 w-6 text-blue-500 dark:text-blue-400" />
+            <div className="rounded-full bg-blue-100 p-3 mb-3">
+              <Car className="h-6 w-6 text-blue-500" />
             </div>
             <span className="text-2xl font-bold">124</span>
             <span className="text-sm text-muted-foreground">Active Drivers</span>
@@ -62,8 +48,8 @@ export default function AdminPage() {
         </Card>
         <Card>
           <CardContent className="p-6 flex flex-col items-center justify-center">
-            <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3 mb-3">
-              <FileText className="h-6 w-6 text-green-500 dark:text-green-400" />
+            <div className="rounded-full bg-green-100 p-3 mb-3">
+              <FileText className="h-6 w-6 text-green-500" />
             </div>
             <span className="text-2xl font-bold">56</span>
             <span className="text-sm text-muted-foreground">Paper Reviews</span>
@@ -71,8 +57,8 @@ export default function AdminPage() {
         </Card>
         <Card>
           <CardContent className="p-6 flex flex-col items-center justify-center">
-            <div className="rounded-full bg-purple-100 dark:bg-purple-900/30 p-3 mb-3">
-              <Briefcase className="h-6 w-6 text-purple-500 dark:text-purple-400" />
+            <div className="rounded-full bg-purple-100 p-3 mb-3">
+              <Briefcase className="h-6 w-6 text-purple-500" />
             </div>
             <span className="text-2xl font-bold">89</span>
             <span className="text-sm text-muted-foreground">Job Applications</span>
@@ -81,7 +67,7 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full max-w-md mx-auto">
+        <TabsList className="grid grid-cols-4 w-full max-w-md">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="entities">Entities</TabsTrigger>
           <TabsTrigger value="matching">Matching</TabsTrigger>
@@ -96,14 +82,14 @@ export default function AdminPage() {
                   <CardTitle>User Management</CardTitle>
                   <CardDescription>Manage platform users and their roles</CardDescription>
                 </div>
-                <Button>
+                <Button className="bg-orange-500 hover:bg-orange-600">
                   <UserPlus className="mr-2 h-4 w-4" />
                   Add User
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+              <div className="flex justify-between items-center mb-4">
                 <Input placeholder="Search users..." className="max-w-sm" />
                 <Select defaultValue="all">
                   <SelectTrigger className="w-[180px]">
@@ -119,7 +105,7 @@ export default function AdminPage() {
                 </Select>
               </div>
 
-              <div className="rounded-md border overflow-x-auto">
+              <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -136,13 +122,10 @@ export default function AdminPage() {
                       <TableCell>john.doe@example.com</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          <Badge variant="outline" className="bg-primary/10 text-primary">
+                          <Badge variant="outline" className="bg-orange-100 text-orange-800">
                             Rider
                           </Badge>
-                          <Badge
-                            variant="outline"
-                            className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                          >
+                          <Badge variant="outline" className="bg-blue-100 text-blue-800">
                             Driver
                           </Badge>
                         </div>
@@ -166,10 +149,7 @@ export default function AdminPage() {
                       <TableCell>jane.smith@example.com</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          <Badge
-                            variant="outline"
-                            className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                          >
+                          <Badge variant="outline" className="bg-green-100 text-green-800">
                             Reviewer
                           </Badge>
                         </div>
@@ -193,10 +173,7 @@ export default function AdminPage() {
                       <TableCell>robert.j@example.com</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          <Badge
-                            variant="outline"
-                            className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
-                          >
+                          <Badge variant="outline" className="bg-purple-100 text-purple-800">
                             Candidate
                           </Badge>
                         </div>
@@ -249,7 +226,7 @@ export default function AdminPage() {
                 </TabsList>
 
                 <TabsContent value="drivers">
-                  <div className="rounded-md border overflow-x-auto">
+                  <div className="rounded-md border">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -302,7 +279,7 @@ export default function AdminPage() {
                 </TabsContent>
 
                 <TabsContent value="rides">
-                  <div className="rounded-md border overflow-x-auto">
+                  <div className="rounded-md border">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -343,6 +320,102 @@ export default function AdminPage() {
                           <TableCell className="text-right">
                             <Button variant="ghost" size="icon">
                               <Edit className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="papers">
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Authors</TableHead>
+                          <TableHead>Reviewer</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Due Date</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-medium">Advances in Machine Learning</TableCell>
+                          <TableCell>J. Smith, A. Johnson</TableCell>
+                          <TableCell>Jane Smith</TableCell>
+                          <TableCell>
+                            <Badge className="bg-yellow-500">Pending</Badge>
+                          </TableCell>
+                          <TableCell>2023-09-15</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">Quantum Computing</TableCell>
+                          <TableCell>R. Feynman, L. Susskind</TableCell>
+                          <TableCell>Robert Johnson</TableCell>
+                          <TableCell>
+                            <Badge className="bg-green-500">Completed</Badge>
+                          </TableCell>
+                          <TableCell>2023-08-30</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="jobs">
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Applications</TableHead>
+                          <TableHead>Posted</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-medium">Frontend Developer</TableCell>
+                          <TableCell>TechCorp Inc.</TableCell>
+                          <TableCell>San Francisco, CA</TableCell>
+                          <TableCell>12</TableCell>
+                          <TableCell>2 days ago</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-red-500">
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">UX/UI Designer</TableCell>
+                          <TableCell>DesignHub</TableCell>
+                          <TableCell>Remote</TableCell>
+                          <TableCell>8</TableCell>
+                          <TableCell>1 week ago</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-red-500">
+                              <Trash className="h-4 w-4" />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -422,7 +495,7 @@ export default function AdminPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button>Save Configuration</Button>
+              <Button className="bg-orange-500 hover:bg-orange-600">Save Configuration</Button>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -460,7 +533,7 @@ export default function AdminPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="defaultTheme">Default Theme</Label>
-                <Select defaultValue="system">
+                <Select defaultValue="light">
                   <SelectTrigger id="defaultTheme">
                     <SelectValue placeholder="Select theme" />
                   </SelectTrigger>
@@ -473,12 +546,12 @@ export default function AdminPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button>Save Settings</Button>
+              <Button className="bg-orange-500 hover:bg-orange-600">Save Settings</Button>
             </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>
-      <MobileNav />
     </div>
   )
 }
+

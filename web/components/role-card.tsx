@@ -15,13 +15,13 @@ export function RoleCard({ role, onRemove }: RoleCardProps) {
   const getRoleIcon = () => {
     switch (role.type) {
       case "rider":
-        return <User className="h-6 w-6 text-primary" />
+        return <User className="h-6 w-6 text-orange-500" />
       case "driver":
-        return <Car className="h-6 w-6 text-primary" />
+        return <Car className="h-6 w-6 text-orange-500" />
       case "reviewer":
-        return <FileText className="h-6 w-6 text-primary" />
+        return <FileText className="h-6 w-6 text-orange-500" />
       case "candidate":
-        return <Briefcase className="h-6 w-6 text-primary" />
+        return <Briefcase className="h-6 w-6 text-orange-500" />
     }
   }
 
@@ -52,17 +52,17 @@ export function RoleCard({ role, onRemove }: RoleCardProps) {
   }
 
   return (
-    <Card className="overflow-hidden border-2 transition-all hover:shadow-md">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-muted/50">
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center space-x-2">
           {getRoleIcon()}
           <CardTitle className="text-xl">{getRoleTitle()}</CardTitle>
         </div>
-        <Badge variant={role.isComplete ? "default" : "outline"} className={role.isComplete ? "" : ""}>
+        <Badge variant={role.isComplete ? "default" : "outline"} className={role.isComplete ? "bg-green-500" : ""}>
           {role.isComplete ? "Complete" : "Incomplete"}
         </Badge>
       </CardHeader>
-      <CardContent className="pt-4">
+      <CardContent>
         <p className="text-sm text-muted-foreground">{getRoleDescription()}</p>
 
         {role.type === "driver" && role.data && (
@@ -92,11 +92,11 @@ export function RoleCard({ role, onRemove }: RoleCardProps) {
           </div>
         )}
       </CardContent>
-      <CardFooter className="bg-muted/30">
+      <CardFooter>
         <Button
           variant="outline"
           size="sm"
-          className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+          className="w-full text-red-500 hover:text-red-700 hover:bg-red-50"
           onClick={onRemove}
         >
           <X className="mr-2 h-4 w-4" /> Remove Role
@@ -105,3 +105,4 @@ export function RoleCard({ role, onRemove }: RoleCardProps) {
     </Card>
   )
 }
+
