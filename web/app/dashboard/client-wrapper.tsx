@@ -2,10 +2,10 @@
 
 import dynamic from "next/dynamic"
 
-// Import the dashboard client component with ssr: false
+// Import the client component with no SSR
 const DashboardClient = dynamic(() => import("./dashboard-client"), {
   ssr: false,
-  loading: () => <p>Loading dashboard...</p>,
+  loading: () => <div>Loading dashboard...</div>,
 })
 
 export default function ClientWrapper() {

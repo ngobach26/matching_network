@@ -2,10 +2,10 @@
 
 import dynamic from "next/dynamic"
 
-// Import the user profile client component with ssr: false
+// Import the client component with no SSR
 const UserProfileClient = dynamic(() => import("./user-profile-client"), {
   ssr: false,
-  loading: () => <p>Loading user profile...</p>,
+  loading: () => <div>Loading user profile...</div>,
 })
 
 export default function ClientWrapper({ id }: { id: string }) {

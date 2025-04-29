@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
-import { userAPI } from "@/lib/api-client"
+import { authAPI, userAPI } from "@/lib/api-client"
 
 export type RoleType = "rider" | "driver" | "reviewer" | "candidate"
 
@@ -14,7 +14,7 @@ export interface Role {
 
 type RoleContextType = {
   roles: Role[]
-  setRoles: React.Dispatch<React.SetStateAction<Role[]>>
+  setRoleList: (roles: Role[] | RoleType[]) => void
   hasRole: (roleType: RoleType) => boolean
   addRole: (role: Role) => void
   removeRole: (roleType: RoleType) => void
@@ -46,11 +46,11 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       if (token && user) {
         try {
           const userData = JSON.parse(user)
-          const response = await userAPI.getRoles(userData.id)
+          const response = await authAPI.getCurrentUser()
 
-          if (response && response.roles) {
-            setRoles(response.roles)
-            localStorage.setItem("userRoles", JSON.stringify(response.roles))
+          if (response && response.user.roles) {
+            setRoles(response.user.roles)
+            localStorage.setItem("userRoles", JSON.stringify(response.user.roles))
           }
         } catch (error) {
           console.error("Error fetching roles:", error)
@@ -65,7 +65,18 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     return roles.some((role) => role.type === roleType)
   }
 
-  const addRole = (role: Role) => {
+  const setRoleList = (rolesOrTypes: Role[] | RoleType[]) => {
+    const roles = typeof rolesOrTypes[0] === "string"
+      ? (rolesOrTypes as RoleType[]).map(createRoleFromType)
+      : (rolesOrTypes as Role[])
+  
+    setRoles(roles)
+    localStorage.setItem("userRoles", JSON.stringify(roles))
+  }
+  
+  const addRole = (roleOrType: Role | RoleType) => {
+    const role = typeof roleOrType === "string" ? createRoleFromType(roleOrType) : roleOrType
+  
     setRoles((prev) => {
       const newRoles = [...prev, role]
       localStorage.setItem("userRoles", JSON.stringify(newRoles))
@@ -81,11 +92,20 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     })
   }
 
+  function createRoleFromType(roleType: RoleType): Role {
+    return {
+      type: roleType,
+      isComplete: false,
+      data: {},
+    }
+  }
+  
+
   return (
     <RoleContext.Provider
       value={{
         roles,
-        setRoles,
+        setRoleList,
         hasRole,
         addRole,
         removeRole,

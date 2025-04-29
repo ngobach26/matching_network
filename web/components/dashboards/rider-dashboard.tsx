@@ -557,4 +557,3 @@ export function RiderDashboard() {
     </Box>
   )
 }
-

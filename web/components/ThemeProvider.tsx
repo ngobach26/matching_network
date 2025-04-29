@@ -70,3 +70,5 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     </ThemeContext.Provider>
   )
 }
+
+export default ThemeProvider

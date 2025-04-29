@@ -87,4 +87,3 @@ export function CandidateForm({ onSubmit }: CandidateFormProps) {
     </form>
   )
 }
-

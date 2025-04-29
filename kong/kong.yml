@@ -49,6 +49,13 @@ services:
                 - DELETE
                 - OPTIONS
               headers:
+                - Content-Type
+                - Authorization
+                - Accept
+                - Origin
+                - User-Agent
+                - X-Requested-With
+              exposed_headers:
                 - "*"
               credentials: true
               preflight_continue: false
@@ -77,12 +84,20 @@ services:
                 - DELETE
                 - OPTIONS
               headers:
+                - Content-Type
+                - Authorization
+                - Accept
+                - Origin
+                - User-Agent
+                - X-Requested-With
+              exposed_headers:
                 - "*"
               credentials: true
               preflight_continue: false
 
       - name: user-service-other
-        paths: ["/api/users"]
+        paths:
+          - "/api/users"
         strip_path: true
         plugins:
           - name: jwt
@@ -101,6 +116,13 @@ services:
                 - DELETE
                 - OPTIONS
               headers:
+                - Content-Type
+                - Authorization
+                - Accept
+                - Origin
+                - User-Agent
+                - X-Requested-With
+              exposed_headers:
                 - "*"
               credentials: true
               preflight_continue: false
@@ -110,7 +132,8 @@ services:
     protocol: http
     routes:
       - name: matching-service-route
-        paths: ["/api/matching"]
+        paths:
+          - "/api/matching"
         strip_path: true
         plugins:
           - name: jwt
@@ -129,6 +152,13 @@ services:
                 - DELETE
                 - OPTIONS
               headers:
+                - Content-Type
+                - Authorization
+                - Accept
+                - Origin
+                - User-Agent
+                - X-Requested-With
+              exposed_headers:
                 - "*"
               credentials: true
               preflight_continue: false

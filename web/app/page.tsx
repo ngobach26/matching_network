@@ -20,7 +20,7 @@ export default function Home() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  const { roles, setRoles } = useRoleContext()
+  const { roles, setRoleList } = useRoleContext()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirectTo")
@@ -37,14 +37,15 @@ export default function Home() {
       const fetchUserData = async () => {
         try {
           const userData = await authAPI.getCurrentUser()
-          if (userData && userData.roles) {
-            setRoles(userData.roles)
+          
+          if (userData && userData.user && userData.user.roles) {
+            setRoleList(userData.user.roles)
           }
 
           // Redirect based on roles or the redirectTo parameter
           if (redirectTo) {
             router.push(redirectTo)
-          } else if (userData.roles && userData.roles.length > 0) {
+          } else if (userData.user && userData.user.roles && userData.user.roles.length > 0) {
             router.push("/dashboard")
           } else {
             router.push("/profile")
@@ -60,7 +61,7 @@ export default function Home() {
 
       fetchUserData()
     }
-  }, [router, setRoles, redirectTo])
+  }, [router, redirectTo])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -70,36 +71,41 @@ export default function Home() {
       // Call the login API
       const response = await authAPI.login(email, password)
 
-      // Store login status and user data
-      localStorage.setItem("isLoggedIn", "true")
-      localStorage.setItem("user", JSON.stringify(response.user))
+      // Check if login was successful
+      if (response.status && response.status.code === 200) {
+        // Store login status and user data
+        localStorage.setItem("isLoggedIn", "true")
+        localStorage.setItem("user", JSON.stringify(response.user))
 
-      // Update roles in context
-      if (response.user && response.user.roles) {
-        setRoles(response.user.roles)
-      }
+        // Update roles in context if available
+        if (response.user && response.user.roles) {
+          setRoleList(response.user.roles)
+        }
 
-      setIsLoggedIn(true)
+        setIsLoggedIn(true)
 
-      // Show success message
-      toast({
-        title: "Login Successful",
-        description: "Welcome back!",
-      })
+        // Show success message
+        toast({
+          title: "Login Successful",
+          description: response.status.message || "Welcome back!",
+        })
 
-      // Redirect based on roles or the redirectTo parameter
-      if (redirectTo) {
-        router.push(redirectTo)
-      } else if (response.user.roles && response.user.roles.length > 0) {
-        router.push("/dashboard")
+        // Redirect based on roles or the redirectTo parameter
+        if (redirectTo) {
+          router.push(redirectTo)
+        } else if (response.user.roles && response.user.roles.length > 0) {
+          router.push("/dashboard")
+        } else {
+          router.push("/profile")
+        }
       } else {
-        router.push("/profile")
+        throw new Error("Login failed")
       }
     } catch (error: any) {
       console.error("Login failed:", error)
       toast({
         title: "Login Failed",
-        description: error.response?.data?.message || "Invalid email or password. Please try again.",
+        description: error.response?.data?.status?.message || "Invalid email or password. Please try again.",
         variant: "destructive",
       })
     } finally {

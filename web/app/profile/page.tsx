@@ -22,7 +22,7 @@ import { toast } from "@/components/ui/use-toast"
 import styles from "./Profile.module.css"
 
 export default function Profile() {
-  const { roles, setRoles } = useRoleContext()
+  const { roles, setRoleList } = useRoleContext()
   const [activeTab, setActiveTab] = useState("profile")
   const [profileData, setProfileData] = useState({
     name: "",
@@ -48,14 +48,14 @@ export default function Profile() {
       setLoading(true)
       try {
         const user = JSON.parse(localStorage.getItem("user") || "{}")
-        const userData = await userAPI.getProfile(user.id)
+        // const userData = await userAPI.getProfile(user.id)
 
         setProfileData({
-          name: userData.name || "",
-          email: userData.email || "",
-          phone: userData.phone || "",
-          address: userData.address || "",
-          bio: userData.bio || "",
+          name: user.name || "",
+          email: user.email || "",
+          phone: user.phone || "",
+          address: user.address || "",
+          bio: user.bio || "",
         })
       } catch (error) {
         console.error("Failed to fetch profile data:", error)

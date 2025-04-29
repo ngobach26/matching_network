@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider as MuiThemeProvider } from "@/components/ThemeProvider"
 import { RoleProvider } from "@/context/role-context"
 import { NotificationProvider } from "@/context/notification-context"
 import { Toaster } from "@/components/ui/toaster"
@@ -23,12 +24,14 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <NotificationProvider>
-            <RoleProvider>
-              {children}
-              <Toaster />
-            </RoleProvider>
-          </NotificationProvider>
+          <MuiThemeProvider>
+            <NotificationProvider>
+              <RoleProvider>
+                {children}
+                <Toaster />
+              </RoleProvider>
+            </NotificationProvider>
+          </MuiThemeProvider>
         </ThemeProvider>
       </body>
     </html>

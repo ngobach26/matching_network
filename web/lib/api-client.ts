@@ -47,8 +47,16 @@ apiClient.interceptors.response.use(
 // Auth related API calls
 export const authAPI = {
   login: async (email: string, password: string) => {
+    // Format the request body according to the API specification
+    const requestBody = {
+      user: {
+        email,
+        password,
+      },
+    }
+
     // Using the path defined in your Kong configuration
-    const response = await apiClient.post("/api/users/login", { email, password })
+    const response = await apiClient.post("/api/users/login", requestBody)
 
     // Store token in cookie for better security
     if (response.data.token) {
@@ -58,14 +66,22 @@ export const authAPI = {
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
       })
+
+      // Also store in localStorage as fallback
+      localStorage.setItem("authToken", response.data.token)
     }
 
     return response.data
   },
 
-  signup: async (userData: any) => {
+  signup: async (userData: { email: string; password: string }) => {
+    // Format the request body according to the API specification
+    const requestBody = {
+      user: userData,
+    }
+
     // Using the path defined in your Kong configuration
-    const response = await apiClient.post("/api/users/signup", userData)
+    const response = await apiClient.post("/api/users/signup", requestBody)
     return response.data
   },
 
@@ -73,8 +89,11 @@ export const authAPI = {
     // Using the path defined in your Kong configuration
     const response = await apiClient.post("/api/users/logout")
 
-    // Clear auth cookie
+    // Clear auth cookie and localStorage
     deleteCookie("authToken")
+    localStorage.removeItem("authToken")
+    localStorage.removeItem("isLoggedIn")
+    localStorage.removeItem("user")
 
     return response.data
   },

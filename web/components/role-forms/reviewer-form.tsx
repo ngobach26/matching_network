@@ -74,4 +74,3 @@ export function ReviewerForm({ onSubmit }: ReviewerFormProps) {
     </form>
   )
 }
-

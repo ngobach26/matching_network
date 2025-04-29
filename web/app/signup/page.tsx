@@ -15,7 +15,6 @@ import { toast } from "@/components/ui/use-toast"
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
     password: "",
     passwordConfirmation: "",
@@ -44,26 +43,29 @@ export default function SignUp() {
     setLoading(true)
 
     try {
-      // Call the signup API
+      // Call the signup API with the expected format
       const response = await authAPI.signup({
-        name: formData.name,
         email: formData.email,
         password: formData.password,
-        password_confirmation: formData.passwordConfirmation,
       })
 
-      toast({
-        title: "Account Created",
-        description: "Your account has been created successfully. Please log in.",
-      })
+      // Check if signup was successful
+      if (response.status && response.status.code === 200) {
+        toast({
+          title: "Account Created",
+          description: response.status.message || "Your account has been created successfully. Please log in.",
+        })
 
-      // Redirect to login page
-      router.push("/")
+        // Redirect to login page
+        router.push("/")
+      } else {
+        throw new Error("Signup failed")
+      }
     } catch (error: any) {
       console.error("Signup failed:", error)
       toast({
         title: "Signup Failed",
-        description: error.response?.data?.message || "Failed to create account. Please try again.",
+        description: error.response?.data?.status?.message || "Failed to create account. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -92,19 +94,6 @@ export default function SignUp() {
         </CardHeader>
         <form onSubmit={handleSignUp}>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                placeholder="John Doe"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                className="h-12"
-              />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
