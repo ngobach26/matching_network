@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useRoleContext } from "@/context/role-context"
 import { Button } from "@/components/ui/button"
@@ -10,9 +10,11 @@ import { RiderDashboard } from "@/components/dashboards/rider-dashboard"
 import { DriverDashboard } from "@/components/dashboards/driver-dashboard"
 import { ReviewerDashboard } from "@/components/dashboards/reviewer-dashboard"
 import { CandidateDashboard } from "@/components/dashboards/candidate-dashboard"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function DashboardPage() {
   const { roles, hasRole } = useRoleContext()
+  const { isAuthenticated, isLoading } = useAuth()
   const [activeTab, setActiveTab] = useState(() => {
     if (hasRole("rider")) return "rider"
     if (hasRole("driver")) return "driver"
@@ -22,12 +24,23 @@ export default function DashboardPage() {
   })
   const router = useRouter()
 
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push("/")
+    }
+  }, [isAuthenticated, isLoading, router])
+
   const handleProfileClick = () => {
     router.push("/profile")
   }
 
   const handleAdminClick = () => {
     router.push("/admin")
+  }
+
+  if (isLoading) {
+    return <div className="container mx-auto py-8 px-4">Loading...</div>
   }
 
   if (roles.length === 0) {
@@ -105,4 +118,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-

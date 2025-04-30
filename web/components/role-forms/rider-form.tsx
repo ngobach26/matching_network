@@ -71,4 +71,3 @@ export function RiderForm({ onSubmit }: RiderFormProps) {
     </form>
   )
 }
-

@@ -272,4 +272,3 @@ export function DriverDashboard() {
     </div>
   )
 }
-

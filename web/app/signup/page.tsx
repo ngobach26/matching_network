@@ -2,10 +2,9 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { useRoleContext } from "@/context/role-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,54 +13,56 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 
-export default function Home() {
+export default function SignupPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { roles } = useRoleContext()
-  const { isAuthenticated, login } = useAuth()
+  const { signup } = useAuth()
   const router = useRouter()
 
-  useEffect(() => {
-    // Redirect based on roles
-    if (isAuthenticated) {
-      if (roles.length > 0) {
-        router.push("/dashboard")
-      } else {
-        router.push("/profile")
-      }
-    }
-  }, [isAuthenticated, roles, router])
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    // Basic validation
+    if (!email || !password) {
+      setError("Email and password are required")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters")
+      return
+    }
+
     setLoading(true)
 
     try {
-      await login(email, password)
-      // Redirect will happen in the useEffect
-    } catch (error: any) {
-      console.error("Login failed:", error)
-      setError(error.message || "Invalid email or password")
+      await signup(email, password)
+      router.push("/")
+    } catch (err: any) {
+      console.error("Signup error:", err)
+      setError(err.message || "Failed to create account. Please try again.")
     } finally {
       setLoading(false)
     }
-  }
-
-  if (isAuthenticated) {
-    return null // Will redirect via useEffect
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Welcome to Multi-Role Platform</CardTitle>
-          <CardDescription className="text-center">Sign in to access your account</CardDescription>
+          <CardTitle className="text-2xl text-center">Create an Account</CardTitle>
+          <CardDescription className="text-center">Sign up to access the platform</CardDescription>
         </CardHeader>
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleSignup}>
           <CardContent className="space-y-4">
             {error && (
               <Alert variant="destructive">
@@ -81,6 +82,7 @@ export default function Home() {
                 required
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -91,16 +93,28 @@ export default function Home() {
                 required
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
           </CardContent>
+
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? "Creating Account..." : "Sign Up"}
             </Button>
 
             <div className="text-center text-sm">
-              Don't have an account?{" "}
-              <Link href="/signup" className="text-orange-500 hover:text-orange-600 font-medium">
-                Sign Up
+              Already have an account?{" "}
+              <Link href="/" className="text-orange-500 hover:text-orange-600 font-medium">
+                Sign In
               </Link>
             </div>
           </CardFooter>
