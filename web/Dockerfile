@@ -18,5 +18,6 @@ COPY . .
 # Build the app
 RUN pnpm run build
 
+
 # Start the app
 CMD ["pnpm", "run", "start"]

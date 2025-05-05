@@ -6,3 +6,5 @@ pymongo
 numpy
 scipy
 networkx
+ipython
+faker

@@ -16,9 +16,9 @@ upstreams:
   - name: users_upstream
     targets:
       - target: user-service:3000
-  - name: matching_upstream
+  - name: ride_upstream
     targets:
-      - target: matching-service:8080
+      - target: ride-service:8080
 
 services:
   - name: user-service
@@ -127,13 +127,13 @@ services:
               credentials: true
               preflight_continue: false
 
-  - name: matching-service
-    host: matching_upstream
+  - name: ride-service
+    host: ride_upstream
     protocol: http
     routes:
-      - name: matching-service-route
+      - name: ride-service-route
         paths:
-          - "/api/matching"
+          - "/api/ride"
         strip_path: true
         plugins:
           - name: jwt

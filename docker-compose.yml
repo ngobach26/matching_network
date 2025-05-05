@@ -49,20 +49,20 @@ services:
     networks:
       - app_network
 
-  matching-service:
+  ride-service:
     build:
-      context: ./matching_service
-    container_name: matching_service
+      context: ./ride_service
+    container_name: ride_service
     restart: always
     depends_on:
       - mongo
     ports:
       - "8080:8080"
     environment:
-      MONGO_URI: mongodb://mongo:27017/matching_service
+      MONGO_URI: mongodb://mongo:27017/ride_service
       JWT_SECRET_KEY: your_jwt_key
     volumes:
-      - ./matching_service:/app
+      - ./ride_service:/app
     networks:
       - app_network
 
@@ -88,7 +88,7 @@ services:
     restart: always
     depends_on:
       - user-service
-      - matching-service
+      - ride-service
     environment:
       KONG_DATABASE: "off"                   # bật DB-less
       KONG_DECLARATIVE_CONFIG: /kong/kong.yml
