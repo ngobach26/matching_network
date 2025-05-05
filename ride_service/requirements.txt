@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+grpcio
+grpcio-tools
+pymongo
+numpy
+scipy
+networkx
+ipython
+faker

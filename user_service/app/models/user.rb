@@ -1,15 +1,13 @@
-class User
-  include Mongoid::Document
-  include Mongoid::Timestamps
+class User < ApplicationRecord
+  include Devise::JWT::RevocationStrategies::JTIMatcher
 
-  devise :database_authenticatable, :registerable, :validatable,
-         :jwt_authenticatable, jwt_revocation_strategy: Devise::JWT::RevocationStrategies::JTIMatcher
+  has_many :user_roles, foreign_key: :user_id
+  has_many :roles, through: :user_roles
 
-  field :email, type: String, default: ""
-  field :encrypted_password, type: String, default: ""
-  field :name, type: String
-  field :bio, type: String
-  field :preferences, type: Hash
+  devise :database_authenticatable, :registerable, :recoverable, :validatable,
+         :jwt_authenticatable, jwt_revocation_strategy: self
 
-  validates :email, presence: true, uniqueness: true
+  def jwt_payload
+    super.merge("iss" => "authentication-key")
+  end
 end
