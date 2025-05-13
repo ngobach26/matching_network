@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from datetime import datetime
-from app.schemas import VehicleCreate
+from app.models import VehicleCreate
 from bson import ObjectId
 from bson.errors import InvalidId
 from app.database import vehicles_collection

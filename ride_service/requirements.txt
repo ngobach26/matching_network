@@ -8,3 +8,9 @@ scipy
 networkx
 ipython
 faker
+confluent_kafka
+pygeohash
+redis
+pandas
+motor
+transitions

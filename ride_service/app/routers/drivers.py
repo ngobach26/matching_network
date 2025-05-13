@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from datetime import datetime
 from typing import List
-from app.schemas import DriverCreate, DriverOut
+from app.models import DriverCreate, DriverOut
 from app.database import drivers_collection
 
 router = APIRouter()

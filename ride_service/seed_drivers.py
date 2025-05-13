@@ -40,7 +40,7 @@ def seed_driver_with_location(user_id: int, province):
 
     # Create vehicle
     vehicle = {
-        "driver_user_id": user_id,
+        "driver_id": user_id,
         "plate_number": fake.license_plate(),
         "model": fake.word().title() + " " + str(random.randint(100, 999)),
         "color": fake.safe_color_name(),
@@ -63,7 +63,7 @@ def seed_driver_with_location(user_id: int, province):
 
     # Create location
     location = {
-        "driver_user_id": user_id,
+        "driver_id": user_id,
         "location": {
             "type": "Point",
             "coordinates": [province["lng"], province["lat"]]

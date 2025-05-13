@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from datetime import datetime
 from typing import List
-from app.schemas import RiderCreate
+from app.models import RiderCreate
 from app.database import riders_collection
 
 router = APIRouter()

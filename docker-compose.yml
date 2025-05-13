@@ -105,6 +105,80 @@ services:
     networks:
       - app_network
 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - app_network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:29092,INTERNAL://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,INTERNAL://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - ./create-topics.sh:/create-topics.sh
+    command: ["/bin/bash", "-c", "/etc/confluent/docker/run & sleep 10 && bash /create-topics.sh && wait"]
+    networks:
+      - app_network
+
+  matching-service:
+    build:
+      context: ./matching_service
+    container_name: matching_service
+    restart: always
+    depends_on:
+      - kafka
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERS: kafka:9092
+    volumes:
+      - ./matching_service:/app
+    networks:
+      - app_network
+    stdin_open: true
+    tty: true
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app_network
+
+  ws-gateway:
+    build:
+      context: ./ws_gateway
+    container_name: ws_gateway
+    restart: always
+    ports:
+      - "7000:8000"
+    volumes:
+      - ./ws_gateway:/app   # 💥 Mount source code từ host vào /app trong container
+    depends_on:
+      - redis
+    networks:
+      - app_network
+
+
 volumes:
   mysql_data:
   mongo_data:
