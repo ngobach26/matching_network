@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import riders, drivers, vehicles,rides,fare_estimate,rating
+from app.routers import riders, drivers, vehicles,rides,fare_estimate,rating,algorithm
 from app.routers import ride_requests
 from app.kafka_consumer import consume_kafka_matching
 import asyncio
@@ -18,6 +18,8 @@ app.include_router(vehicles.router, prefix="/vehicles", tags=["vehicles"])
 app.include_router(rides.router, prefix="/rides", tags=["rides"])
 app.include_router(fare_estimate.router, prefix="/fare-estimate", tags=["fare-estimate"])
 app.include_router(rating.router, prefix="/ratings", tags=["ratings"])
+app.include_router(algorithm.router, prefix="/matching-algorithm", tags=["matching-algorithm"])
+
 
 
 

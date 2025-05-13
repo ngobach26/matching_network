@@ -23,7 +23,7 @@ def match_driver(request: RideRequestCreate):
     lat = request.pickup_location.lat
     lng = request.pickup_location.lng
     rider_id = request.rider_id
-    geohash = gh.encode(lat, lng, precision=5)
+    geohash = gh.encode(lat, lng, precision=4)
     now = datetime.now()
 
     # ✅ 1. Ghi trước vào DB, lấy ride_request_id
@@ -119,6 +119,8 @@ async def driver_decision(
         ride = {
             "rider_id": rider_id,
             "request_id": ObjectId(ride_request_id),
+            "estimated_distance_km": ride_req.get("estimated_distance"),
+            "estimated_duration_min": ride_req.get("estimated_duration"),
             "driver_id": decision.driver_id,
             "status": "accepted",
             "created_at": datetime.utcnow()
@@ -133,7 +135,7 @@ async def driver_decision(
         # ❌ Reject: gửi lại vào Kafka
         lat = ride_req["pickup_location"]["lat"]
         lng = ride_req["pickup_location"]["lng"]
-        geohash = gh.encode(lat, lng, precision=5)
+        geohash = gh.encode(lat, lng, precision=4)
         requested_at = ride_req.get("requested_at", datetime.utcnow())
         if isinstance(requested_at, datetime):
             requested_at = requested_at.isoformat()

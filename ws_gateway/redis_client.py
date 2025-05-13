@@ -9,12 +9,11 @@ TTL = 60  # TTL for Redis keys in seconds
 r = redis.Redis(host="redis", port=6379, decode_responses=True)
 
 async def update_location(role: str, user_id: str, lat: float, lng: float):
-    geohash = gh.encode(lat, lng, precision=5)
+    geohash = gh.encode(lat, lng, precision=4)
 
     geo_key = f"geo:{role}s"
     id_key = f"{role}:{user_id}"
 
-    # Lưu vị trí kèm TTL 30s
     await r.geoadd(geo_key, (lng, lat, user_id))
     await r.set(id_key, json.dumps({
         "lat": lat,

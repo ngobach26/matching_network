@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Optional
 import pygeohash as gh
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
@@ -93,3 +94,52 @@ async def update_ride_status(ride_id: str, action: str = Body(..., embed=True)):
     )
 
     return {"ride_id": ride_id, "new_status": ride.status}
+
+@router.get("/", response_model=list[RideDetail])
+def list_rides():
+    rides = list(rides_collection.find())
+    return [
+        {
+            "id": str(ride["_id"]),
+            "rider_id": ride["rider_id"],
+            "request_id": str(ride["request_id"]),
+            "driver_id": ride["driver_id"],
+            "status": ride["status"],
+            "created_at": ride.get("created_at"),
+            "start_time": ride.get("start_time"),
+            "end_time": ride.get("end_time"),
+            "estimated_fare": ride.get("estimated_fare"),
+            "actual_fare": ride.get("actual_fare"),
+            "estimated_distance_km": ride.get("estimated_distance_km"),
+            "actual_distance_km": ride.get("actual_distance_km"),
+            "estimated_duration_min": ride.get("estimated_duration_min"),
+            "actual_duration_min": ride.get("actual_duration_min"),
+        }
+        for ride in rides
+    ]
+
+@router.get("/active/{rider_id}", response_model=Optional[RideDetail])
+def get_active_ride_for_rider(rider_id: int):
+    ride = rides_collection.find_one({
+        "rider_id": rider_id,
+        "status": {"$in": ["accepted", "arrived", "picked_up", "ongoing"]}
+    })
+
+    if not ride:
+        return None
+
+    return RideDetail(
+        id=str(ride["_id"]),
+        rider_id=ride["rider_id"],
+        driver_id=ride["driver_id"],
+        status=ride["status"],
+        created_at=ride.get("created_at"),
+        start_time=ride.get("start_time"),
+        end_time=ride.get("end_time"),
+        estimated_fare=ride.get("estimated_fare"),
+        actual_fare=ride.get("actual_fare"),
+        estimated_distance_km=ride.get("estimated_distance_km"),
+        actual_distance_km=ride.get("actual_distance_km"),
+        estimated_duration_min=ride.get("estimated_duration_min"),
+        actual_duration_min=ride.get("actual_duration_min"),
+    )

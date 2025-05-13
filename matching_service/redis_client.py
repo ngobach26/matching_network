@@ -38,3 +38,14 @@ def get_drivers_by_geohash(gh: str):
             continue
 
     return drivers
+
+def get_matching_algorithm():
+    raw = r.get("matching:algorithm")
+    if not raw:
+        return "gale_shapley"
+    try:
+        # Nếu Redis lưu dạng JSON
+        return json.loads(raw).get("algorithm", "gale_shapley")
+    except json.JSONDecodeError:
+        # Nếu chỉ lưu plain string (phòng trường hợp khác)
+        return raw

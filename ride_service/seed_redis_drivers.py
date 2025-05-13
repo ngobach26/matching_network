@@ -2,7 +2,7 @@ import json
 import random
 import math
 import asyncio
-import pygeohash as gh
+# import pygeohash as gh
 import redis.asyncio as redis
 
 # TTL constants
@@ -17,7 +17,7 @@ def random_nearby(lat, lng, radius_m=1000):
     return lat + lat_offset, lng + lng_offset
 
 async def update_location(role: str, user_id: str, lat: float, lng: float):
-    geohash = gh.encode(lat, lng, precision=5)
+    # geohash = gh.encode(lat, lng, precision=4)
 
     geo_key = f"geo:{role}s"
     id_key = f"{role}:{user_id}"
@@ -27,16 +27,16 @@ async def update_location(role: str, user_id: str, lat: float, lng: float):
     await r.set(id_key, json.dumps({
         "lat": lat,
         "lng": lng,
-        "geohash": geohash
+        # "geohash": geohash
     }), ex=TTL)
 
     # Đánh dấu trạng thái là online
     await r.set(f"{role}:{user_id}:status", "online", ex=60)
 
     # Thêm vào geohash cluster
-    await r.sadd(f"{role}:geohash:{geohash}", user_id)
+    # await r.sadd(f"{role}:geohash:{geohash}", user_id)
 
-    print(f"📍 Updated {role} {user_id} → ({lat:.5f}, {lng:.5f}) [geohash: {geohash}]", flush=True)
+    # print(f"📍 Updated {role} {user_id} → ({lat:.5f}, {lng:.5f}) [geohash: {geohash}]", flush=True)
 
 async def seed_drivers(start_id, count, center_lat, center_lng, label):
     for i in range(start_id, start_id + count):

@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from confluent_kafka import Consumer, Producer, TopicPartition
 
 from stable_matching import build_preferences, gale_shapley
-from redis_client     import get_drivers_by_geohash, lock_driver
+from redis_client     import get_drivers_by_geohash, lock_driver, get_matching_algorithm
 
 # --------------------------------------------------------------------------- #
 # CONFIG
@@ -113,12 +113,24 @@ def flush_buffer(buf: dict) -> None:
             [{"id": r["rider_id"], "lat": r["lat"], "lng": r["lng"]} for r in riders],
             drivers,
         )
-        matches = gale_shapley(
-            [r["rider_id"] for r in riders],
-            [d["id"] for d in drivers],
-            prefs_r,
-            prefs_d,
-        )
+        algo = get_matching_algorithm()
+        print(f"🔧 Using algorithm: {algo}")
+
+        if algo == "gale_shapley":
+                matches = gale_shapley(
+                [r["rider_id"] for r in riders],
+                [d["id"] for d in drivers],
+                prefs_r,
+                prefs_d,
+            )
+        else:
+            print(f"⚠️ Unknown algorithm '{algo}', fallback to gale_shapley")
+            matches = gale_shapley(
+                [r["rider_id"] for r in riders],
+                [d["id"] for d in drivers],
+                prefs_r,
+                prefs_d,
+            )
 
         for payload, hdr, raw_msg in items:
             rider_id = payload["rider_id"]

@@ -29,9 +29,21 @@ class Users::UsersController < ApplicationController
     end
   end
 
+  def index
+    users = User.all.includes(:roles)
+    render json: users.map { |user|
+      {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        roles: user.roles.pluck(:name)
+      }
+    }, status: :ok
+  end
+
   private
 
   def user_params
-    params.require(:user).permit(:name, :email) # Add more fields if necessary
+    params.require(:user).permit(:name, :email)
   end
 end

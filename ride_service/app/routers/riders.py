@@ -18,6 +18,7 @@ def create_rider(rider: RiderCreate):
     result = riders_collection.insert_one(data)
     return {"inserted_id": str(result.inserted_id)}
 
+
 # GET /riders/
 @router.get("/")
 def list_riders():

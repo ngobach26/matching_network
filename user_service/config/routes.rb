@@ -15,7 +15,7 @@ Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
   get "me", to: "users/users#me"
   patch "me", to: "users/users#update"
-
+  get "users", to: "users/users#index"
   # Defines the root path route ("/")
   # root "posts#index"
 end

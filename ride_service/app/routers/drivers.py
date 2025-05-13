@@ -18,7 +18,6 @@ def create_driver(driver: DriverCreate):
     result = drivers_collection.insert_one(data)
     return {"inserted_id": str(result.inserted_id)}
 
-
 @router.get("/", response_model=List[DriverOut])
 def list_drivers():
     drivers = list(drivers_collection.find())
