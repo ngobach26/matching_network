@@ -119,6 +119,7 @@ async def driver_decision(
         ride = {
             "rider_id": rider_id,
             "request_id": ObjectId(ride_request_id),
+            "estimated_fare": ride_req.get("estimated_fare"),
             "estimated_distance_km": ride_req.get("estimated_distance"),
             "estimated_duration_min": ride_req.get("estimated_duration"),
             "driver_id": decision.driver_id,

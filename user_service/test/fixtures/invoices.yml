@@ -1,0 +1,21 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  amount: 9.99
+  status: MyString
+  invoiceable: one
+  invoiceable_type: Invoiceable
+  payment_method: MyString
+  paid_at: 2025-05-19 20:33:29
+  currency: MyString
+  transaction_id: MyString
+
+two:
+  amount: 9.99
+  status: MyString
+  invoiceable: two
+  invoiceable_type: Invoiceable
+  payment_method: MyString
+  paid_at: 2025-05-19 20:33:29
+  currency: MyString
+  transaction_id: MyString

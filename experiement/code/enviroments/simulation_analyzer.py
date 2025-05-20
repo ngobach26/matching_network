@@ -330,7 +330,7 @@ class SimulationAnalyzer:
             'Avg Waiting Time (s)': [m['avg_waiting_time'] for m in metrics_list],
             'Avg Trip Time (s)': [m['avg_trip_time'] for m in metrics_list],
             'Avg Driver Earnings ($)': [m['avg_driver_earnings'] for m in metrics_list],
-            'Gini Coefficient': [m.get('gini_coefficient', 0) for m in metrics_list],
+            # 'Gini Coefficient': [m.get('gini_coefficient', 0) for m in metrics_list],
             'Avg Empty Miles': [m['avg_empty_miles'] for m in metrics_list],
             'Cancellation Rate': [m.get('cancellation_rate', 0) for m in metrics_list],
         })
@@ -355,13 +355,13 @@ class SimulationAnalyzer:
         axes[0, 1].set_title('Average Driver Earnings')
         axes[0, 1].grid(True, axis='y')
         
-        ax3 = sns.barplot(x='Algorithm', y='Gini Coefficient', data=comparison, ax=axes[1, 0])
-        for i, p in enumerate(ax3.patches):
-            height = p.get_height()
-            ax3.text(p.get_x() + p.get_width()/2., height + 0.005,
-                  f'{height:.3f}', ha='center')
-        axes[1, 0].set_title('Earnings Inequality (Gini)')
-        axes[1, 0].grid(True, axis='y')
+        # ax3 = sns.barplot(x='Algorithm', y='Gini Coefficient', data=comparison, ax=axes[1, 0])
+        # for i, p in enumerate(ax3.patches):
+        #     height = p.get_height()
+        #     ax3.text(p.get_x() + p.get_width()/2., height + 0.005,
+        #           f'{height:.3f}', ha='center')
+        # axes[1, 0].set_title('Earnings Inequality (Gini)')
+        # axes[1, 0].grid(True, axis='y')
         
         ax4 = sns.barplot(x='Algorithm', y='Avg Empty Miles', data=comparison, ax=axes[1, 1])
         for i, p in enumerate(ax4.patches):

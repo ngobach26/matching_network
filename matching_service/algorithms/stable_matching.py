@@ -52,22 +52,21 @@ def gale_shapley(riders: List[str],
     next_proposal = {r: 0 for r in riders}     # pointer đến driver tiếp theo
     engaged: Dict[str, str] = {}               # driver -> rider
 
-    # driver ranking (để so sánh nhanh)
     rank_d = {d: {r: i for i, r in enumerate(pref_d[d])} for d in drivers}
 
     while free_riders:
         r = free_riders.pop()
-        if next_proposal[r] >= len(pref_r[r]):  # đã cầu hôn hết
+        if next_proposal[r] >= len(pref_r[r]): 
             continue
         d = pref_r[r][ next_proposal[r] ]
         next_proposal[r] += 1
 
-        if d not in engaged:               # driver còn trống
+        if d not in engaged:              
             engaged[d] = r
-        else:                              # driver đã có người
+        else:                            
             current_r = engaged[d]
             if rank_d[d][r] < rank_d[d][current_r]:
-                engaged[d] = r             # driver thích rider mới hơn
+                engaged[d] = r            
                 free_riders.add(current_r)
             else:
                 free_riders.add(r)         

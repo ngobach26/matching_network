@@ -5,9 +5,9 @@ from datetime import datetime
 
 # Parameters
 source_path = "data/fhvhv_tripdata_2025-01.parquet"  # full file
-output_path = "data/2h.parquet"            # filtered small file
+output_path = "data/2min.parquet"            # filtered small file
 start_time = "2025-01-01 00:00:00"
-end_time   = "2025-01-01 02:00:00"
+end_time   = "2025-01-01 00:02:00"
 
 # Convert to pandas Timestamp for consistency
 start_ts = pd.to_datetime(start_time)

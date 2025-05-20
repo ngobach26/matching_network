@@ -16,6 +16,8 @@ Rails.application.routes.draw do
   get "me", to: "users/users#me"
   patch "me", to: "users/users#update"
   get "users", to: "users/users#index"
+  resources :payments, only: [ :create ]
+  get "/vnpay_return", to: "payments#vnpay_return", as: :vnpay_return
   # Defines the root path route ("/")
   # root "posts#index"
 end

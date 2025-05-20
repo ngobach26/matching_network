@@ -7,7 +7,7 @@ import heapq
 from tqdm import tqdm
 
 RUSH_HOUR = [(0, 2), (14, 17)]
-MAX_WAIT_TIME_MINS = 10  # Maximum wait time before cancellation (in minutes)
+MAX_WAIT_TIME_MINS = 15  # Maximum wait time before cancellation (in minutes)
 DEFAULT_NUM_DRIVERS = 1000
 
 class Simulation:

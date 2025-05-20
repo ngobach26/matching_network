@@ -10,9 +10,10 @@ from .stable_fair import StableFairMatchingAlgorithm
 from .stable_matching import StableMatchingAlgorithm
 from .matching_algorithm import MatchingAlgorithm
 from .proximity_based_zoning import ProximityBasedMatchingWithZoning
-from .clustering import ClusteredHungarianAlgorithm
+from .ride_share import SharedRideMatchingAlgorithm
 from .stable_density import StableDensityMatchingAlgorithm
 from .density_hungarian import DensityHungarianAlgorithm
+# from .revenue_hungarian import RevenueMaximizingMatchingAlgorithm
 
 __all__ = [
     "BatchedHungarianAlgorithm",
@@ -22,7 +23,8 @@ __all__ = [
     "StableMatchingAlgorithm",
     "MatchingAlgorithm",
     "ProximityBasedMatchingWithZoning",
-    "ClusteredHungarianAlgorithm",
     "StableDensityMatchingAlgorithm",
     "DensityHungarianAlgorithm",
+    "SharedRideMatchingAlgorithm",
+    # "RevenueMaximizingMatchingAlgorithm"
 ]

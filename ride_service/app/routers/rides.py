@@ -1,9 +1,9 @@
 import json
 import os
-from typing import Optional
+from typing import List, Optional
 import pygeohash as gh
 from datetime import datetime
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException,Query,Path
 from app.models import RideDetail
 from app.database import ride_requests_collection,rides_collection
 from bson import ObjectId
@@ -13,8 +13,44 @@ from fastapi import Body
 from app.state_machine.ride_state_machine import RideStateMachine
 from app.redis_client import unlock_driver
 from app.kafka_client import send_ride_event_to_kafka
+from app.models.ride import RideUpdateRequest
 
 router = APIRouter()
+
+@router.get("/active", response_model=List[RideDetail])
+def list_active_rides(
+    rider_id: Optional[int] = Query(None),
+    driver_id: Optional[int] = Query(None),
+):
+    query = {
+        "status": {"$in": ["accepted", "arrived", "picked_up", "ongoing"]}
+    }
+
+    if rider_id is not None:
+        query["rider_id"] = rider_id
+    if driver_id is not None:
+        query["driver_id"] = driver_id
+
+    rides = list(rides_collection.find(query))
+
+    return [
+        RideDetail(
+            id=str(ride["_id"]),
+            rider_id=ride["rider_id"],
+            driver_id=ride["driver_id"],
+            status=ride["status"],
+            created_at=ride.get("created_at"),
+            start_time=ride.get("start_time"),
+            end_time=ride.get("end_time"),
+            estimated_fare=ride.get("estimated_fare"),
+            actual_fare=ride.get("actual_fare"),
+            estimated_distance_km=ride.get("estimated_distance_km"),
+            actual_distance_km=ride.get("actual_distance_km"),
+            estimated_duration_min=ride.get("estimated_duration_min"),
+            actual_duration_min=ride.get("actual_duration_min"),
+        )
+        for ride in rides
+    ]
 
 @router.get("/{ride_id}", response_model=RideDetail)
 def get_ride(ride_id: str):
@@ -118,28 +154,27 @@ def list_rides():
         for ride in rides
     ]
 
-@router.get("/active/{rider_id}", response_model=Optional[RideDetail])
-def get_active_ride_for_rider(rider_id: int):
-    ride = rides_collection.find_one({
-        "rider_id": rider_id,
-        "status": {"$in": ["accepted", "arrived", "picked_up", "ongoing"]}
-    })
+@router.patch("/{ride_id}")
+def update_ride(
+    ride_id: str = Path(..., description="ID của chuyến đi"),
+    update_data: RideUpdateRequest = Body(...)
+):
+    try:
+        ride = rides_collection.find_one({"_id": ObjectId(ride_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid ride_id")
 
     if not ride:
-        return None
+        raise HTTPException(status_code=404, detail="Ride not found")
 
-    return RideDetail(
-        id=str(ride["_id"]),
-        rider_id=ride["rider_id"],
-        driver_id=ride["driver_id"],
-        status=ride["status"],
-        created_at=ride.get("created_at"),
-        start_time=ride.get("start_time"),
-        end_time=ride.get("end_time"),
-        estimated_fare=ride.get("estimated_fare"),
-        actual_fare=ride.get("actual_fare"),
-        estimated_distance_km=ride.get("estimated_distance_km"),
-        actual_distance_km=ride.get("actual_distance_km"),
-        estimated_duration_min=ride.get("estimated_duration_min"),
-        actual_duration_min=ride.get("actual_duration_min"),
+    update_fields = {k: v for k, v in update_data.dict().items() if v is not None}
+
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    rides_collection.update_one(
+        {"_id": ObjectId(ride_id)},
+        {"$set": update_fields}
     )
+
+    return {"ride_id": ride_id, "updated_fields": update_fields}

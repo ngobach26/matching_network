@@ -10,7 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_04_29_171439) do
+ActiveRecord::Schema[8.0].define(version: 2025_05_19_133329) do
+  create_table "invoices", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "service_type"
+    t.string "service_id"
+    t.decimal "amount", precision: 15, scale: 2, null: false
+    t.string "currency", default: "VND"
+    t.string "payment_method"
+    t.string "status", default: "pending"
+    t.datetime "paid_at"
+    t.text "meta_data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["service_type", "service_id"], name: "index_invoices_on_service"
+  end
+
   create_table "roles", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name"
     t.text "description"

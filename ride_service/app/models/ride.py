@@ -7,6 +7,7 @@ class RideDetail(BaseModel):
     rider_id: int 
     driver_id: int
     status: Literal["accepted", "arrived", "picked_up", "ongoing", "completed", "cancelled"]
+    payment_status: Literal["unpaid", "paid"] = "unpaid" 
     created_at: Optional[datetime]
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
@@ -27,3 +28,9 @@ class RideCreate(BaseModel):
     fare: float
     status: Literal["ongoing", "completed", "cancelled"]
     created_at: Optional[datetime] = None
+
+class RideUpdateRequest(BaseModel):
+    payment_status: Optional[Literal["unpaid", "pending", "paid", "failed"]] = None
+    actual_fare: Optional[float] = None
+    actual_distance_km: Optional[float] = None
+    actual_duration_min: Optional[int] = None

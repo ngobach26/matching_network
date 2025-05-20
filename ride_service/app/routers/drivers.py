@@ -15,6 +15,7 @@ def create_driver(driver: DriverCreate):
 
     data = driver.model_dump()
     data["created_at"] = data.get("created_at") or datetime.utcnow()
+    print(data,flush=True)
     result = drivers_collection.insert_one(data)
     return {"inserted_id": str(result.inserted_id)}
 
