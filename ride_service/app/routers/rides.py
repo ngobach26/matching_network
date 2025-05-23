@@ -1,29 +1,25 @@
-import json
-import os
 from typing import List, Optional
-import pygeohash as gh
 from datetime import datetime
+import pygeohash as gh
 from fastapi import APIRouter, HTTPException,Query,Path
-from app.models import RideDetail
-from app.database import ride_requests_collection,rides_collection
+from app.models import Ride, RideCreate, RideUpdateRequest, RatingCreate, DriverDecisionRequest
+from app.database import rides_collection, drivers_collection
 from bson import ObjectId
-from confluent_kafka import Producer
-import redis.asyncio as redis
 from fastapi import Body
 from app.state_machine.ride_state_machine import RideStateMachine
 from app.redis_client import unlock_driver
-from app.kafka_client import send_ride_event_to_kafka
-from app.models.ride import RideUpdateRequest
+from app.kafka_client import send_ride_request_to_kafka, notify_rider_match_found,send_ride_event_to_kafka
+from app.utils import parse_ride
 
 router = APIRouter()
 
-@router.get("/active", response_model=List[RideDetail])
+@router.get("/active", response_model=List[Ride])
 def list_active_rides(
     rider_id: Optional[int] = Query(None),
     driver_id: Optional[int] = Query(None),
 ):
     query = {
-        "status": {"$in": ["accepted", "arrived", "picked_up", "ongoing"]}
+        "status": {"$in": ["pending","accepted", "arrived", "picked_up", "ongoing"]}
     }
 
     if rider_id is not None:
@@ -33,26 +29,10 @@ def list_active_rides(
 
     rides = list(rides_collection.find(query))
 
-    return [
-        RideDetail(
-            id=str(ride["_id"]),
-            rider_id=ride["rider_id"],
-            driver_id=ride["driver_id"],
-            status=ride["status"],
-            created_at=ride.get("created_at"),
-            start_time=ride.get("start_time"),
-            end_time=ride.get("end_time"),
-            estimated_fare=ride.get("estimated_fare"),
-            actual_fare=ride.get("actual_fare"),
-            estimated_distance_km=ride.get("estimated_distance_km"),
-            actual_distance_km=ride.get("actual_distance_km"),
-            estimated_duration_min=ride.get("estimated_duration_min"),
-            actual_duration_min=ride.get("actual_duration_min"),
-        )
-        for ride in rides
-    ]
+    return [parse_ride(ride) for ride in rides]
 
-@router.get("/{ride_id}", response_model=RideDetail)
+
+@router.get("/{ride_id}", response_model=Ride)
 def get_ride(ride_id: str):
     try:
         ride = rides_collection.find_one({"_id": ObjectId(ride_id)})
@@ -61,52 +41,23 @@ def get_ride(ride_id: str):
 
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
-    print(ride)
-    return {
-        "id": str(ride["_id"]),
-        "rider_id": ride["rider_id"],
-        "request_id": str(ride["request_id"]),
-        "driver_id": ride["driver_id"],
-        "status": ride["status"],
-        "created_at": ride.get("created_at"),
-        "start_time": ride.get("start_time"),
-        "end_time": ride.get("end_time"),
-        "estimated_fare": ride.get("estimated_fare"),
-        "actual_fare": ride.get("actual_fare"),
-        "estimated_distance_km": ride.get("estimated_distance_km"),
-        "actual_distance_km": ride.get("actual_distance_km"),
-        "estimated_duration_min": ride.get("estimated_duration_min"),
-        "actual_duration_min": ride.get("actual_duration_min"),
-    }
+
+    return parse_ride(ride)
 
 @router.post("/{ride_id}/status")
 async def update_ride_status(ride_id: str, action: str = Body(..., embed=True)):
     try:
         ride_data = rides_collection.find_one({"_id": ObjectId(ride_id)})
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid ride_id")
+        raise HTTPException(status_code=400, detail="Invalid ride_id format")
 
     if not ride_data:
         raise HTTPException(status_code=404, detail="Ride not found")
 
-    ride = RideDetail(
-        id=str(ride_data["_id"]),
-        rider_id=ride_data["rider_id"],
-        driver_id=ride_data["driver_id"],
-        status=ride_data["status"],
-        created_at=ride_data.get("created_at"),
-        start_time=ride_data.get("start_time"),
-        end_time=ride_data.get("end_time"),
-        estimated_fare=ride_data.get("estimated_fare"),
-        actual_fare=ride_data.get("actual_fare"),
-        estimated_distance_km=ride_data.get("estimated_distance_km"),
-        actual_distance_km=ride_data.get("actual_distance_km"),
-        estimated_duration_min=ride_data.get("estimated_duration_min"),
-        actual_duration_min=ride_data.get("actual_duration_min"),
-    )
+    ride_data["_id"] = str(ride_data["_id"])  # convert ObjectId -> str
+    ride = Ride(**ride_data)
 
     sm = RideStateMachine(ride)
-
     try:
         trigger = getattr(sm, action)
         trigger()
@@ -116,11 +67,14 @@ async def update_ride_status(ride_id: str, action: str = Body(..., embed=True)):
         raise HTTPException(status_code=400, detail=str(e))
 
     update_fields = {"status": ride.status}
-    if ride.status == "ongoing" and not ride.start_time:
-        update_fields["start_time"] = datetime.utcnow()
-    elif ride.status == "completed" and not ride.end_time:
-        update_fields["end_time"] = datetime.utcnow()
-        await unlock_driver(ride.driver_id)
+
+    if ride.status == "ongoing" and not ride.start_at:
+        update_fields["start_at"] = datetime.utcnow()
+
+    elif ride.status == "completed" and not ride.end_at:
+        update_fields["end_at"] = datetime.utcnow()
+        if ride.driver_id is not None:
+            await unlock_driver(ride.driver_id)
 
     send_ride_event_to_kafka(ride)
 
@@ -131,28 +85,10 @@ async def update_ride_status(ride_id: str, action: str = Body(..., embed=True)):
 
     return {"ride_id": ride_id, "new_status": ride.status}
 
-@router.get("/", response_model=list[RideDetail])
+@router.get("/", response_model=list[Ride])
 def list_rides():
     rides = list(rides_collection.find())
-    return [
-        {
-            "id": str(ride["_id"]),
-            "rider_id": ride["rider_id"],
-            "request_id": str(ride["request_id"]),
-            "driver_id": ride["driver_id"],
-            "status": ride["status"],
-            "created_at": ride.get("created_at"),
-            "start_time": ride.get("start_time"),
-            "end_time": ride.get("end_time"),
-            "estimated_fare": ride.get("estimated_fare"),
-            "actual_fare": ride.get("actual_fare"),
-            "estimated_distance_km": ride.get("estimated_distance_km"),
-            "actual_distance_km": ride.get("actual_distance_km"),
-            "estimated_duration_min": ride.get("estimated_duration_min"),
-            "actual_duration_min": ride.get("actual_duration_min"),
-        }
-        for ride in rides
-    ]
+    return [parse_ride(ride) for ride in rides]
 
 @router.patch("/{ride_id}")
 def update_ride(
@@ -160,21 +96,145 @@ def update_ride(
     update_data: RideUpdateRequest = Body(...)
 ):
     try:
-        ride = rides_collection.find_one({"_id": ObjectId(ride_id)})
+        object_id = ObjectId(ride_id)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid ride_id")
 
+    ride = rides_collection.find_one({"_id": object_id})
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
 
-    update_fields = {k: v for k, v in update_data.dict().items() if v is not None}
+    update_fields = {
+        k: v for k, v in update_data.model_dump(exclude_unset=True).items()
+        if v is not None
+    }
 
     if not update_fields:
         raise HTTPException(status_code=400, detail="No fields to update")
 
     rides_collection.update_one(
-        {"_id": ObjectId(ride_id)},
+        {"_id": object_id},
         {"$set": update_fields}
     )
 
-    return {"ride_id": ride_id, "updated_fields": update_fields}
+    return {
+        "ride_id": ride_id,
+        "updated_fields": update_fields
+    }
+
+@router.post("/", response_model=Ride)
+async def match_driver(request: RideCreate):
+    lat = request.pickup_location.coordinate.lat
+    lng = request.pickup_location.coordinate.lng
+    geohash_code = gh.encode(lat, lng, precision=4)
+
+    ride_data = request.model_dump(exclude_unset=True)
+    ride_data["geohash"] = geohash_code
+    ride_data["status"] = "pending"
+
+    result = rides_collection.insert_one(ride_data)
+    ride_id = str(result.inserted_id)
+
+    ride_data["_id"] = ride_id  
+    ride_out = Ride(**ride_data) 
+
+    send_ride_request_to_kafka(ride_out)
+    return ride_out
+
+@router.post("/{ride_id}/decision")
+async def driver_decision(ride_id: str, data: DriverDecisionRequest):
+    driver_id = data.driver_id
+    decision = data.accept
+    try:
+        ride = rides_collection.find_one({"_id": ObjectId(ride_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid ride_id format")
+
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride request not found")
+
+    rider_id = ride["rider_id"]
+
+    if decision:
+        # Update ride status and assign driver
+        rides_collection.update_one(
+            {"_id": ObjectId(ride_id)},
+            {"$set": {
+                "status": "accepted",
+                "driver_id": driver_id,
+                "matched_at": datetime.now()
+            }}
+        )
+
+        # Fetch updated ride
+        updated_ride = rides_collection.find_one({"_id": ObjectId(ride_id)})
+        updated_ride["id"] = str(updated_ride["_id"])
+        updated_ride.pop("_id", None)
+
+        notify_rider_match_found(rider_id, ride_id)
+
+        return {
+            "message": "✅ Accepted and matched",
+            "ride": updated_ride
+        }
+
+    else:
+        await unlock_driver(driver_id)
+
+        # Requeue the ride to matching service
+        ride["id"] = str(ride["_id"])
+        ride.pop("_id", None)
+        send_ride_request_to_kafka(ride)
+
+        return {
+            "message": "🔁 Re-queued to matching service"
+        }
+    
+@router.post("/{ride_id}/rating", response_model=RatingCreate)
+async def submit_rating(
+    ride_id: str = Path(..., description="Ride ID"),
+    rating: RatingCreate = ...
+):
+    object_id = ObjectId(ride_id)
+    ride = rides_collection.find_one({"_id": object_id}) or rides_collection.find_one({"id": object_id})
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+
+    if ride.get("rating"):
+        raise HTTPException(status_code=400, detail="Rating already submitted for this ride.")
+
+    rating_data = {
+        "rating": rating.rating,
+        "comment": rating.comment,
+        "created_at": rating.created_at,
+    }
+
+    rides_collection.update_one(
+        {"_id": ride["_id"]},
+        {"$set": {"rating": rating_data}}
+    )
+
+    driver_id = ride.get("driver_id")
+    if not driver_id:
+        raise HTTPException(status_code=400, detail="Driver not found in ride.")
+
+    driver = drivers_collection.find_one({"user_id": driver_id})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+
+    current_avg = driver.get("rating_average", 0.0)
+    current_count = driver.get("rating_count", 0)
+
+    new_total = current_avg * current_count + rating.rating
+    new_count = current_count + 1
+    new_avg = round(new_total / new_count, 2)
+
+    drivers_collection.update_one(
+        {"user_id": driver_id},
+        {"$set": {
+            "rating_average": new_avg,
+            "rating_count": new_count
+        }}
+    )
+
+    return {"message": "Rating submitted successfully"}

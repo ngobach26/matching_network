@@ -145,7 +145,7 @@ def flush_buffer(buf: dict) -> None:
 
         for payload, hdr, raw_msg in items:
             rider_id = payload["rider_id"]
-            req_id   = payload["ride_request_id"]
+            req_id   = payload["ride_id"]
             drv_id   = matches.get(rider_id)
 
             if not drv_id:
@@ -158,7 +158,7 @@ def flush_buffer(buf: dict) -> None:
 
             # ✅ match thành công
             result = {
-                "ride_request_id": req_id,
+                "ride_id": req_id,
                 "rider_id": rider_id,
                 "driver_id": drv_id,
                 "matched_at": iso(now_epoch()),
@@ -186,7 +186,7 @@ def schedule_retry(payload: dict, hdr: dict, raw_msg, reason: str) -> None:
             "elapsed_seconds": elapsed,
             "failed_at": iso(now_epoch()),
         }
-        producer.produce(TOPIC_FAIL, key=payload["ride_request_id"],
+        producer.produce(TOPIC_FAIL, key=payload["ride_id"],
                          value=json.dumps(fail_msg))
         consumer.commit(message=raw_msg, asynchronous=False)
         print("⏱️  FAILED =>", fail_msg)
@@ -202,12 +202,12 @@ def schedule_retry(payload: dict, hdr: dict, raw_msg, reason: str) -> None:
     ]
     producer.produce(
         TOPIC_RETRY,
-        key=payload["ride_request_id"],
+        key=payload["ride_id"],
         value=json.dumps(payload),
         headers=headers,
     )
     consumer.commit(message=raw_msg, asynchronous=False)
-    print(f"🔄 SCHEDULE RETRY #{retry_cnt} in {delay}s -> {payload['ride_request_id']} ({reason})")
+    print(f"🔄 SCHEDULE RETRY #{retry_cnt} in {delay}s -> {payload['ride_id']} ({reason})")
 
 
 # --------------------------------------------------------------------------- #
