@@ -54,10 +54,10 @@ async def update_ride_status(ride_id: str, action: str = Body(..., embed=True)):
     if not ride_data:
         raise HTTPException(status_code=404, detail="Ride not found")
 
-    ride_data["_id"] = str(ride_data["_id"])  # convert ObjectId -> str
+    ride_data["_id"] = str(ride_data["_id"])
     ride = Ride(**ride_data)
-
     sm = RideStateMachine(ride)
+
     try:
         trigger = getattr(sm, action)
         trigger()
@@ -65,25 +65,21 @@ async def update_ride_status(ride_id: str, action: str = Body(..., embed=True)):
         raise HTTPException(status_code=400, detail=f"Invalid action: {action}")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+    if ride.status == "completed" and ride.driver_id is not None:
+        await unlock_driver(ride.driver_id)
 
-    update_fields = {"status": ride.status}
-
-    if ride.status == "ongoing" and not ride.start_at:
-        update_fields["start_at"] = datetime.utcnow()
-
-    elif ride.status == "completed" and not ride.end_at:
-        update_fields["end_at"] = datetime.utcnow()
-        if ride.driver_id is not None:
-            await unlock_driver(ride.driver_id)
-
+    # send event ra kafka
     send_ride_event_to_kafka(ride)
 
+    # cập nhật mọi field đã thay đổi lên DB (giả sử ride.dict() trả về các trường cần thiết)
     rides_collection.update_one(
         {"_id": ObjectId(ride_id)},
-        {"$set": update_fields}
+        {"$set": ride.dict(exclude_unset=True, exclude={"_id"})}
     )
 
     return {"ride_id": ride_id, "new_status": ride.status}
+
 
 @router.get("/", response_model=list[Ride])
 def list_rides():
@@ -168,14 +164,12 @@ async def driver_decision(ride_id: str, data: DriverDecisionRequest):
 
         # Fetch updated ride
         updated_ride = rides_collection.find_one({"_id": ObjectId(ride_id)})
-        updated_ride["id"] = str(updated_ride["_id"])
-        updated_ride.pop("_id", None)
 
         notify_rider_match_found(rider_id, ride_id)
 
         return {
             "message": "✅ Accepted and matched",
-            "ride": updated_ride
+            "ride": parse_ride(updated_ride)
         }
 
     else:
@@ -190,7 +184,7 @@ async def driver_decision(ride_id: str, data: DriverDecisionRequest):
             "message": "🔁 Re-queued to matching service"
         }
     
-@router.post("/{ride_id}/rating", response_model=RatingCreate)
+@router.post("/{ride_id}/rating")
 async def submit_rating(
     ride_id: str = Path(..., description="Ride ID"),
     rating: RatingCreate = ...

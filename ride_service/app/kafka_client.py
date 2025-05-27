@@ -52,7 +52,7 @@ def send_ride_event_to_kafka(ride):
     
 def notify_rider_match_found(rider_id: int, ride_result_id: str):
     message = {
-        "event": "ride_request_matched",
+        "event": "driver_found",
         "rider_id": rider_id,
         "ride_id": ride_result_id,
     }

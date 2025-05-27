@@ -5,12 +5,13 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { RoleProvider } from "@/context/role-context"
 import { AuthProvider } from "@/context/auth-provider"
+import { ReduxProvider } from "@/lib/redux/provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Multi-Role Platform",
-  description: "A platform where users can have multiple roles",
+  title: "SmartMatch Platform",
+  description: "A platform where users can ride or drive",
   generator: "v0.dev",
 }
 
@@ -20,12 +21,14 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
         <ThemeProvider>
-          <AuthProvider>
-            <RoleProvider>{children}</RoleProvider>
-          </AuthProvider>
+          <ReduxProvider>
+            <AuthProvider>
+              <RoleProvider>{children}</RoleProvider>
+            </AuthProvider>
+          </ReduxProvider>
         </ThemeProvider>
       </body>
     </html>

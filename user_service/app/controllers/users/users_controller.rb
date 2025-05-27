@@ -7,7 +7,13 @@ class Users::UsersController < ApplicationController
         id: current_user.id,
         email: current_user.email,
         name: current_user.name,
-        roles: current_user.roles.pluck(:name)
+        roles: current_user.roles.pluck(:name),
+        avatar_url: current_user.avatar_url,
+        cover_image_url: current_user.cover_image_url,
+        phone_number: current_user.phone_number,
+        bio: current_user.bio,
+        date_of_birth: current_user.date_of_birth&.iso8601,
+        address: current_user.address
       }
     }
   end

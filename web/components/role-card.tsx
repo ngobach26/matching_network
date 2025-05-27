@@ -4,7 +4,7 @@ import type { Role } from "@/context/role-context"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Car, User, FileText, Briefcase, X } from "lucide-react"
+import { Car, User, X, CreditCard, Users } from "lucide-react"
 
 interface RoleCardProps {
   role: Role
@@ -18,10 +18,6 @@ export function RoleCard({ role, onRemove }: RoleCardProps) {
         return <User className="h-6 w-6 text-orange-500" />
       case "driver":
         return <Car className="h-6 w-6 text-orange-500" />
-      case "reviewer":
-        return <FileText className="h-6 w-6 text-orange-500" />
-      case "candidate":
-        return <Briefcase className="h-6 w-6 text-orange-500" />
     }
   }
 
@@ -31,10 +27,6 @@ export function RoleCard({ role, onRemove }: RoleCardProps) {
         return "Rider"
       case "driver":
         return "Driver"
-      case "reviewer":
-        return "Reviewer"
-      case "candidate":
-        return "Candidate"
     }
   }
 
@@ -44,10 +36,6 @@ export function RoleCard({ role, onRemove }: RoleCardProps) {
         return "Request rides and travel to your destinations"
       case "driver":
         return "Provide rides to users and earn money"
-      case "reviewer":
-        return "Review papers and provide feedback"
-      case "candidate":
-        return "Apply for jobs and track applications"
     }
   }
 
@@ -67,28 +55,53 @@ export function RoleCard({ role, onRemove }: RoleCardProps) {
 
         {role.type === "driver" && role.data && (
           <div className="mt-4 space-y-1">
+            {role.data.vehicle && (
+              <p className="text-sm">
+                <span className="font-medium">Vehicle:</span> {role.data.vehicle.model}
+                {role.data.vehicle.color && ` (${role.data.vehicle.color})`}
+              </p>
+            )}
+            {role.data.vehicle && (
+              <div className="flex items-center gap-1 text-sm">
+                <span className="font-medium">Capacity:</span>
+                <div className="flex items-center">
+                  <Users className="h-4 w-4 mr-1 text-orange-500" />
+                  {role.data.vehicle.capacity} passengers
+                </div>
+              </div>
+            )}
             <p className="text-sm">
-              <span className="font-medium">Vehicle:</span> {role.data.vehicle}
+              <span className="font-medium">License:</span> {role.data.driver_license}
             </p>
+            {role.data.rating_average && (
+              <p className="text-sm">
+                <span className="font-medium">Rating:</span> {role.data.rating_average.toFixed(1)}/5.0
+              </p>
+            )}
             <p className="text-sm">
-              <span className="font-medium">License:</span> {role.data.license}
+              <span className="font-medium">Status:</span>{" "}
+              <Badge
+                variant="outline"
+                className={role.data.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
+              >
+                {role.data.status}
+              </Badge>
             </p>
           </div>
         )}
 
-        {role.type === "reviewer" && role.data && (
+        {role.type === "rider" && role.data && (
           <div className="mt-4 space-y-1">
             <p className="text-sm">
-              <span className="font-medium">Expertise:</span> {role.data.expertise}
+              <span className="font-medium">License/ID:</span> {role.data.license_number || "Not specified"}
             </p>
-          </div>
-        )}
-
-        {role.type === "candidate" && role.data && (
-          <div className="mt-4 space-y-1">
-            <p className="text-sm">
-              <span className="font-medium">Skills:</span> {role.data.skills}
-            </p>
+            <div className="flex items-center gap-1 text-sm">
+              <span className="font-medium">Payment Method:</span>
+              <div className="flex items-center">
+                <CreditCard className="h-4 w-4 mr-1 text-orange-500" />
+                {role.data.payment_method || "Credit Card"}
+              </div>
+            </div>
           </div>
         )}
       </CardContent>
