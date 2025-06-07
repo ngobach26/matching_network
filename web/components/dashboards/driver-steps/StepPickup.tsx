@@ -1,10 +1,13 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { MapPin, User, AlertCircle, Loader2 } from "lucide-react"
+import { MapPin, User, AlertCircle, Loader2, MessageCircle } from "lucide-react"
 import type { Ride } from "@/lib/api-client"
 import Map from "@/components/map"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import ChatBox from "@/components/message/chat-box"
 
 interface StepPickupProps {
   ride: Ride | null
@@ -15,6 +18,13 @@ interface StepPickupProps {
   onArriveAtPickup: () => void
   onPickupRider: () => void
   onCancelRide: () => void
+
+  // Chat props:
+  messages: any[]
+  onSendMessage: (msg: string) => void
+  myAvatar: string
+  theirAvatar: string
+  theirName: string
 }
 
 export function StepPickup({
@@ -26,7 +36,13 @@ export function StepPickup({
   onArriveAtPickup,
   onPickupRider,
   onCancelRide,
+  messages,
+  onSendMessage,
+  myAvatar,
+  theirAvatar,
+  theirName,
 }: StepPickupProps) {
+  const [chatOpen, setChatOpen] = useState(false)
 
   return (
     <div className="flex flex-col md:flex-row gap-6">
@@ -94,14 +110,28 @@ export function StepPickup({
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center">
-            <User className="h-6 w-6 text-gray-500" />
+          <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+            <img
+              src="https://randomuser.me/api/portraits/women/68.jpg"
+              alt="Rider Avatar"
+              className="h-full w-full object-cover"
+            />
           </div>
           <div>
-            <h3 className="font-medium">{`Rider #${ride ? ride.rider_id: 'Unknown'}`}</h3>
+            <h3 className="font-medium">{`Rider #${ride ? ride.rider_id : 'Unknown'}`}</h3>
             <div className="text-sm text-muted-foreground">Waiting at pickup location</div>
           </div>
         </div>
+
+        <Button
+          variant="outline"
+          className="w-full flex items-center gap-2 border-orange-500 text-orange-600"
+          type="button"
+          onClick={() => setChatOpen(true)}
+        >
+          <MessageCircle className="w-5 h-5" />
+          Chat with Rider
+        </Button>
 
         {rideStatus === "accepted" && (
           <Button
@@ -146,6 +176,21 @@ export function StepPickup({
           Cancel Ride
         </Button>
       </div>
+
+      {/* Modal hiển thị ChatBox */}
+      <Dialog open={chatOpen} onOpenChange={setChatOpen}>
+        <DialogContent className="max-w-2xl w-full h-[98vh] p-0 flex flex-col overflow-auto">
+          <div className="h-full flex flex-col bg-white">
+            <ChatBox
+              messages={messages}
+              myAvatar={myAvatar}
+              theirAvatar={theirAvatar}
+              theirName={theirName}
+              onSendMessage={onSendMessage}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

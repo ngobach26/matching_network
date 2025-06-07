@@ -1,6 +1,6 @@
 // components/community/community-discussion.tsx
 import PostCard from "../posts/post-card"
-import { mockPosts } from "../users/profile-tabs/profile-posts"
+import { mockPosts } from "../users/profile-tabs/profile-activities"
 
 export default function CommunityDiscussion({ community }: any) {
   // Có thể filter post theo community_id

@@ -27,6 +27,8 @@ export function RiderDashboard() {
   const [destination, setDestination] = useState("")
   const [pickupLocation, setPickupLocation] = useState<Location | null>(null)
   const [dropoffLocation, setDropoffLocation] = useState<Location | null>(null)
+  const [isPayed, setIsPayed] = useState(false)
+  const [messages, setMessages] = useState<any[]>([]);
 
   const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([])
   const [destinationSuggestions, setDestinationSuggestions] = useState<any[]>([])
@@ -73,7 +75,7 @@ export function RiderDashboard() {
   }, [userId])
 
   // Ngắt websocket connection chỉ khi rời trang (unmount)
-  const { isConnected, disconnect } = useWebSocket({
+  const { isConnected, disconnect,sendMessage } = useWebSocket({
     url: wsUrl,
     onMessage: (data) => handleWebSocketMessage(data),
     onOpen: () => console.log("WebSocket connected"),
@@ -81,6 +83,16 @@ export function RiderDashboard() {
     onError: () => setMatchError("Connection error. Please try again."),
     reconnectAttempts: 3,
   })
+  
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search)
+      const responseCode = params.get("vnp_ResponseCode")
+      if (responseCode === "00") {
+        setIsPayed(true)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -133,8 +145,10 @@ export function RiderDashboard() {
     setRatingComment("")
     setRatingSubmitted(false)
     // SỬA: reset luôn flag suggestion
+    setIsPayed(false)
     setPickupSelected(false)
     setDestinationSelected(false)
+    setMessages([])
   }, [])
 
   const handlePayWithVNPAY = async () => {
@@ -210,6 +224,15 @@ export function RiderDashboard() {
         setStep(4)
       }
     }
+    if (data.type === "message" && data.data) {
+      setMessages((msgs) => [
+        ...msgs,
+        {
+          ...data.data,
+          fromMe: data.data.sender_id === userId // hoặc kiểm tra theo logic của bạn
+        }
+      ]);
+    }
   }
 
   const fetchFareEstimate = async () => {
@@ -227,6 +250,26 @@ export function RiderDashboard() {
       setIsFetchingEstimate(false)
     }
   }
+
+  const sendMessageToDriver = (text: string) => {
+    if (!ride || !driver || !userId) return;
+    const msg = {
+      type: "message",
+      ride_id: ride._id,
+      receiver_id: driver.user_id,
+      message: text
+    };
+    sendMessage(msg);
+    setMessages(msgs => [
+      ...msgs,
+      {
+        ...msg,
+        sender_id: userId,
+        fromMe: true,
+        timestamp: new Date().toISOString(),
+      }
+    ]);
+  };
 
   const handleFindDriver = async () => {
     if (!pickupLocation || !dropoffLocation || !fareEstimate || !userId) return
@@ -402,8 +445,14 @@ export function RiderDashboard() {
 
         {step === 2 && ride && driver && (
           <StepDriverInfo
+            messages={messages}
+            onSendMessage={sendMessageToDriver}
+            myAvatar={"https://randomuser.me/api/portraits/women/68.jpg"}
+            theirAvatar={"https://randomuser.me/api/portraits/men/32.jpg"}
+            theirName={"Driver User"}
             handlePayWithVNPAY={handlePayWithVNPAY}
             isPaying={isPaying}
+            isPayed={isPayed}
             ride={ride}
             driver={driver}
             onStartTrip={() => {
@@ -417,6 +466,7 @@ export function RiderDashboard() {
           <StepTransit
             handlePayWithVNPAY={handlePayWithVNPAY}
             isPaying={isPaying}
+            isPayed={isPayed}
             ride={ride}
             onComplete={() => {
               setRideStatus("completed")

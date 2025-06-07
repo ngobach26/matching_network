@@ -7,9 +7,10 @@ from app.database import rides_collection, drivers_collection
 from bson import ObjectId
 from fastapi import Body
 from app.state_machine.ride_state_machine import RideStateMachine
-from app.redis_client import unlock_driver
+from app.redis_client import unlock_driver, sync_driver_rating
 from app.kafka_client import send_ride_request_to_kafka, notify_rider_match_found,send_ride_event_to_kafka
 from app.utils import parse_ride
+from app.internal_api import create_invoice_via_user_service
 
 router = APIRouter()
 
@@ -66,20 +67,31 @@ async def update_ride_status(ride_id: str, action: str = Body(..., embed=True)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
+    invoice_result = None
+
     if ride.status == "completed" and ride.driver_id is not None:
         await unlock_driver(ride.driver_id)
+        # Gọi user service để tạo invoice
+        try:
+            invoice_result = await create_invoice_via_user_service(ride)
+        except Exception as e:
+            # Bạn có thể log lỗi hoặc trả về cho FE nếu muốn
+            invoice_result = {"error": f"Could not create invoice: {str(e)}"}
 
     # send event ra kafka
     send_ride_event_to_kafka(ride)
 
-    # cập nhật mọi field đã thay đổi lên DB (giả sử ride.dict() trả về các trường cần thiết)
+    # cập nhật mọi field đã thay đổi lên DB
     rides_collection.update_one(
         {"_id": ObjectId(ride_id)},
         {"$set": ride.dict(exclude_unset=True, exclude={"_id"})}
     )
 
-    return {"ride_id": ride_id, "new_status": ride.status}
-
+    return {
+        "ride_id": ride_id,
+        "new_status": ride.status,
+        "invoice_result": invoice_result
+    }
 
 @router.get("/", response_model=list[Ride])
 def list_rides():
@@ -178,19 +190,24 @@ async def driver_decision(ride_id: str, data: DriverDecisionRequest):
         # Requeue the ride to matching service
         ride["id"] = str(ride["_id"])
         ride.pop("_id", None)
-        send_ride_request_to_kafka(ride)
+        send_ride_request_to_kafka(Ride(**ride))
 
         return {
             "message": "🔁 Re-queued to matching service"
         }
-    
+
 @router.post("/{ride_id}/rating")
 async def submit_rating(
     ride_id: str = Path(..., description="Ride ID"),
     rating: RatingCreate = ...
 ):
-    object_id = ObjectId(ride_id)
-    ride = rides_collection.find_one({"_id": object_id}) or rides_collection.find_one({"id": object_id})
+    # Tìm ride theo ObjectId hoặc id thường
+    try:
+        object_id = ObjectId(ride_id)
+        ride = rides_collection.find_one({"_id": object_id}) or rides_collection.find_one({"id": ride_id})
+    except Exception:
+        ride = rides_collection.find_one({"id": ride_id})
+
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
 
@@ -203,6 +220,7 @@ async def submit_rating(
         "created_at": rating.created_at,
     }
 
+    # Update rating cho ride
     rides_collection.update_one(
         {"_id": ride["_id"]},
         {"$set": {"rating": rating_data}}
@@ -219,6 +237,7 @@ async def submit_rating(
     current_avg = driver.get("rating_average", 0.0)
     current_count = driver.get("rating_count", 0)
 
+    # Cập nhật lại giá trị trung bình và số lượt lên MongoDB
     new_total = current_avg * current_count + rating.rating
     new_count = current_count + 1
     new_avg = round(new_total / new_count, 2)
@@ -231,4 +250,17 @@ async def submit_rating(
         }}
     )
 
+    # --- Cập nhật trực tiếp vào Redis ---
+    await sync_driver_rating(driver_id, new_avg, new_count)
+
     return {"message": "Rating submitted successfully"}
+
+@router.get("/driver/{driver_id}", response_model=List[Ride])
+def get_rides_by_driver(driver_id: int):
+    rides = list(rides_collection.find({"driver_id": driver_id}))
+    return [parse_ride(ride) for ride in rides] 
+
+@router.get("/rider/{rider_id}", response_model=List[Ride])
+def get_rides_by_rider(rider_id: int):
+    rides = list(rides_collection.find({"rider_id": rider_id}))
+    return [parse_ride(ride) for ride in rides]

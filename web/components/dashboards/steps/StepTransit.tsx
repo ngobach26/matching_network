@@ -12,11 +12,12 @@ import { Button } from "@/components/ui/button"
 interface Props {
   handlePayWithVNPAY: () => void
   isPaying: boolean
+  isPayed: boolean
   ride: Ride | null
   onComplete: () => void
 }
 
-export function StepTransit({ ride, onComplete, handlePayWithVNPAY, isPaying }: Props) {
+export function StepTransit({ ride, onComplete, handlePayWithVNPAY, isPaying,isPayed }: Props) {
   const [routeInfo, setRouteInfo] = useState<{ distance: string; duration: string } | null>(null)
 
   // Simulate getting route info from the map component
@@ -75,11 +76,11 @@ export function StepTransit({ ride, onComplete, handlePayWithVNPAY, isPaying }: 
       <div className="mt-4">
         <Button
           onClick={handlePayWithVNPAY}
-          disabled={isPaying}
+          disabled={isPayed}
           className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md flex items-center justify-center gap-2"
         >
           <CreditCard className="w-5 h-5" />
-          {isPaying ? "Đang xử lý..." : "Thanh toán qua VNPAY"}
+          {isPayed ? "Payment completed" : "Pay with VNPAY"}
         </Button>
       </div>
     </Card>

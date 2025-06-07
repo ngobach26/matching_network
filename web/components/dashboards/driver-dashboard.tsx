@@ -18,6 +18,7 @@ export function DriverDashboard() {
 
   // Default to inactive (off)
   const [isAvailable, setIsAvailable] = useState(false)
+  const [messages, setMessages] = useState<any[]>([]);
   const [rideStatus, setRideStatus] = useState<"idle" | "requested" | "pickup" | "transit" | "completed">("idle")
   const [isUpdating, setIsUpdating] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected")
@@ -129,7 +130,7 @@ export function DriverDashboard() {
     },
     [isAvailable],
   )
-
+  
   // Handle WebSocket messages
   const handleWebSocketMessage = useCallback(async (data: any) => {
     console.log("Processing WebSocket message:", data)
@@ -162,6 +163,16 @@ export function DriverDashboard() {
       console.log("Ride request received:", data)
       setRideStatus("requested")
       setWaitingForRequests(false)
+    }
+
+    if (data.type === "message" && data.data) {
+      setMessages(msgs => [
+        ...msgs,
+        {
+          ...data.data,
+          fromMe: data.data.sender_id === userId, // Bạn là driver
+        }
+      ]);
     }
   }, [])
 
@@ -339,6 +350,26 @@ export function DriverDashboard() {
     }
   }
 
+  const sendMessageToRider = (text: string) => {
+    if (!currentRide || !userId || !currentRide.rider_id) return;
+    const msg = {
+      type: "message",
+      ride_id: currentRide._id,
+      receiver_id: currentRide.rider_id,
+      message: text,
+    };
+    wsRef.current?.readyState === 1 && wsRef.current.send(JSON.stringify(msg));
+    setMessages(msgs => [
+      ...msgs,
+      {
+        ...msg,
+        sender_id: userId,
+        fromMe: true,
+        timestamp: new Date().toISOString(),
+      }
+    ]);
+  };
+
   // Handle driver decision (accept or decline)
   const handleDriverDecision = async (accept: boolean) => {
     if (!currentRide) return
@@ -449,6 +480,7 @@ export function DriverDashboard() {
     setCurrentRide(null)
     setCurrentRideStatus(null)
     setWaitingForRequests(true)
+    setMessages([]);
   }
 
   // Render the appropriate step based on ride status
@@ -492,7 +524,13 @@ export function DriverDashboard() {
             onArriveAtPickup={handleArriveAtPickup}
             onPickupRider={handlePickupRider}
             onCancelRide={handleCancelRide}
+            messages={messages}
+            onSendMessage={sendMessageToRider}
+            myAvatar={"https://randomuser.me/api/portraits/men/32.jpg"} // DRIVER avatar (nam, lịch sự)
+            theirAvatar={"https://randomuser.me/api/portraits/women/68.jpg"} // RIDER avatar (nữ, thân thiện)
+            theirName={"Rider User"}
           />
+
         )
       case "transit":
         return (

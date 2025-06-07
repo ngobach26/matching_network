@@ -45,7 +45,7 @@ export function StepCompleted({ ride, onNewRide }: StepCompletedProps) {
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Estimated trip duration</span>
+            <span className="text-muted-foreground">Trip duration</span>
             <span className="font-medium">
               {ride?.estimated_duration ? `${ride.estimated_duration.toFixed(1)} minutes` : "15 minutes"}
             </span>

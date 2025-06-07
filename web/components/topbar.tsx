@@ -53,7 +53,7 @@ export function Topbar() {
         </div>
 
         {/* Center: Search Bar */}
-        <form onSubmit={handleSearch} className="hidden md:flex items-center max-w-md w-full mx-4">
+        {/* <form onSubmit={handleSearch} className="hidden md:flex items-center max-w-md w-full mx-4">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -64,23 +64,17 @@ export function Topbar() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-        </form>
+        </form> */}
 
         {/* Right: Notification & User Menu */}
         <div className="flex items-center space-x-4">
-          {/* <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-0 right-0 h-2 w-2 bg-orange-500 rounded-full"></span>
-          </Button> */}
-          <NotificationPopover />
+          {/* <NotificationPopover />
           <Link href="/message">
             <Button variant="ghost" size="icon" className="relative">
               <MessageCircle className="h-5 w-5" />
               <span className="absolute top-0 right-0 h-2 w-2 bg-orange-500 rounded-full"></span>
-
-              {/* Có thể thêm badge nếu có tin nhắn mới */}
             </Button>
-          </Link>
+          </Link> */}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -53,6 +53,20 @@ export interface UserProfile {
   address?: string
   driver?: Driver
 }
+export interface Profile {
+  user: User | null
+  driver: Driver | null
+}
+
+export interface MatchingConfig {
+  algorithm: "gale_shapley" | "hungarian"
+  proximity_weight: number
+  rating_weight: number
+  price_weight: number
+  max_distance?: number
+  matching_timeout?: number
+  min_driver_rating?: number
+}
 
 export interface User {
   id: number
@@ -149,7 +163,7 @@ export interface DriverCreate {
   vehicle: Vehicle;
 }
 
-export interface DriverUpdate{
+export interface DriverUpdate {
   driver_license?: string;
   status?: "active" | "inactive";
   vehicle?: Vehicle;
@@ -246,7 +260,7 @@ export const authAPI = {
     const requestBody = {
       user: userData,
     }
-  
+
     // Using the path defined in your Kong configuration
     const response = await apiClient.post("/api/users/signup", requestBody)
     return response.data
@@ -284,6 +298,25 @@ export const userAPI = {
   getListUsers: async (): Promise<User[]> => {
     const response = await apiClient.get("/api/users/users/")
     return response.data
+  },
+  // Thêm API fetch user theo ID
+  getUserById: async (userId: number | string): Promise<User | null> => {
+    try {
+      const response = await apiClient.get(`/api/users/users/${userId}`)
+      return response.data.user
+    } catch (e) {
+      return null
+    }
+  },
+
+  // Kết hợp lấy cả User và Driver (profile)
+  getProfile: async (userId: number): Promise<Profile> => {
+    // Lấy song song, nếu lỗi vẫn trả về null
+    const [user, driver] = await Promise.all([
+      userAPI.getUserById(userId),
+      driverAPI.getDriver(userId),
+    ])
+    return { user, driver }
   },
 }
 
@@ -363,6 +396,17 @@ export const rideAPI = {
     const response = await apiClient.post(`/api/ride/rides/${ride_id}/rating`, ratingData)
     return response.data
   },
+  
+  getRidesByDriver: async (driver_id: number): Promise<Ride[]> => {
+    const response = await apiClient.get(`/api/ride/rides/driver/${driver_id}`)
+    return response.data
+  },
+
+  // Lấy danh sách chuyến đi theo rider
+  getRidesByRider: async (rider_id: number): Promise<Ride[]> => {
+    const response = await apiClient.get(`/api/ride/rides/rider/${rider_id}`)
+    return response.data
+  },
 }
 
 // Payment API
@@ -403,6 +447,21 @@ export const adminAPI = {
       console.error("Failed to load admin dashboard data", err)
       throw err
     }
+  },
+}
+
+export const matchingAPI = {
+  setConfig: async (geohash: string, config: MatchingConfig) => {
+    const response = await apiClient.put(`/api/ride/matching-algorithm/?geohash=${geohash}`, config)
+    return response.data
+  },
+  getConfig: async (geohash: string) => {
+    const response = await apiClient.get(`/api/ride/matching-algorithm/?geohash=${geohash}`)
+    return response.data
+  },
+  listGeohash: async (): Promise<string[]> => {
+    const response = await apiClient.get("/api/ride/matching-algorithm/geohash-list")
+    return response.data
   },
 }
 

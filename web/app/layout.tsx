@@ -11,8 +11,6 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "SmartMatch Platform",
-  description: "A platform where users can ride or drive",
-  generator: "v0.dev",
 }
 
 export default function RootLayout({

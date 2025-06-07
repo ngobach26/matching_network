@@ -1,7 +1,7 @@
 # app/models/invoice.rb
 class Invoice < ApplicationRecord
   STATUSES = %w[pending paid failed cancelled]
-  PAYMENT_METHODS = %w[vnpay]
+  PAYMENT_METHODS = %w[vnpay cash]
 
   validates :amount, presence: true, numericality: { greater_than: 0 }
   validates :status, inclusion: { in: STATUSES }

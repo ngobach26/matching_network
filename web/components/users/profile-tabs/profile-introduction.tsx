@@ -2,81 +2,24 @@
 
 import * as React from "react"
 import { Badge } from "@/components/ui/badge"
-import { Car, Star, KeyRound, User, Info, Mail, Phone } from "lucide-react"
-
-interface VehicleInfo {
-  vehicle_type: "bike" | "car" | "premium"
-  brand: string
-  model: string
-  plate_number: string
-  capacity: number
-  color?: string
-}
-
-interface DriverInfo {
-  driver_license: string
-  status: "active" | "inactive"
-  vehicle: VehicleInfo
-  totalRides: number
-  ratingAverage: number
-  ratingCount: number
-  createdAt?: string
-}
-
-interface RiderInfo {
-  // Có thể mở rộng các trường khác nếu cần
-  favoriteLocation?: string
-  createdAt?: string
-}
-
-interface UserProfile {
-  id: string
-  name: string
-  email?: string
-  phone?: string
-  bio?: string
-  roles: Array<"driver" | "rider" | "admin">
-  driverInfo?: DriverInfo
-  riderInfo?: RiderInfo
-  // thêm các role khác nếu có
-}
+import { Car, Star, KeyRound, Info, Mail, Phone, UserIcon } from "lucide-react"
+import type { User, Driver } from "@/lib/api-client"
 
 interface ProfileIntroductionProps {
-  user: UserProfile
+  user: User
+  driver?: Driver | null
   className?: string
 }
 
-export const mockUser: UserProfile = {
-    id: "u12345",
-    name: "Nguyen Van A",
-    email: "nguyenvana@example.com",
-    phone: "+84 912345678",
-    bio: "Chào mọi người! Mình là A, thích khám phá công nghệ, đam mê du lịch, hiện đang là tài xế và khách hàng tích cực của hệ sinh thái này.",
-    roles: ["driver", "rider"],
-    driverInfo: {
-      driver_license: "B2-123456789",
-      status: "active",
-      vehicle: {
-        vehicle_type: "car",
-        brand: "Toyota",
-        model: "Vios",
-        plate_number: "30F-123.45",
-        capacity: 4,
-        color: "Black",
-      },
-      totalRides: 278,
-      ratingAverage: 4.83,
-      ratingCount: 109,
-      createdAt: "2022-11-01T08:00:00Z",
-    },
-    riderInfo: {
-      favoriteLocation: "Royal City, Hà Nội",
-      createdAt: "2021-08-15T09:30:00Z",
-    },
-  }
-  
+const ProfileIntroduction: React.FC<ProfileIntroductionProps> = ({ user, driver, className }) => {
+  const roles = Array.isArray(user.roles) ? user.roles : []
 
-export const ProfileIntroduction: React.FC<ProfileIntroductionProps> = ({ user, className }) => {
+  // Helper hiển thị "Chưa cập nhật" khi giá trị là null/rỗng
+  const displayOrDefault = (value: any, defaultValue: string = "Chưa cập nhật") => {
+    if (value === null || value === undefined || value === "") return defaultValue
+    return value
+  }
+
   return (
     <div className={className}>
       {/* Section: General Info */}
@@ -85,35 +28,61 @@ export const ProfileIntroduction: React.FC<ProfileIntroductionProps> = ({ user, 
           <Info className="w-5 h-5 text-orange-500" />
           <h2 className="text-lg font-semibold">Introduction</h2>
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-300">
-          {user.bio && <div className="mb-1">{user.bio}</div>}
+        <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+          {/* Name */}
           <div>
-            <Mail className="inline w-4 h-4 mr-1 text-gray-400" /> {user.email}
+            <UserIcon className="inline w-4 h-4 mr-1 text-gray-400" />
+            {displayOrDefault(user.name, "Chưa có tên")}
           </div>
-          {user.phone && (
-            <div>
-              <Phone className="inline w-4 h-4 mr-1 text-gray-400" /> {user.phone}
-            </div>
-          )}
+          {/* Email */}
+          <div>
+            <Mail className="inline w-4 h-4 mr-1 text-gray-400" />
+            {displayOrDefault(user.email, "Chưa có email")}
+          </div>
+          {/* Phone */}
+          <div>
+            <Phone className="inline w-4 h-4 mr-1 text-gray-400" />
+            {displayOrDefault(user.phone_number, "Chưa có số điện thoại")}
+          </div>
+          {/* Date of Birth */}
+          <div>
+            <span className="inline-block w-4 h-4 mr-1 align-middle">🎂</span>
+            {displayOrDefault(user.date_of_birth, "Chưa có ngày sinh")}
+          </div>
+          {/* Address */}
+          <div>
+            <span className="inline-block w-4 h-4 mr-1 align-middle">📍</span>
+            {displayOrDefault(user.address, "Chưa có địa chỉ")}
+          </div>
+          {/* Bio */}
+          <div className="mb-1">
+            <span className="inline-block w-4 h-4 mr-1 align-middle">📝</span>
+            {displayOrDefault(user.bio, "Chưa có mô tả bản thân.")}
+          </div>
+          {/* Roles */}
+          <div>
+            <span className="inline-block w-4 h-4 mr-1 align-middle">🏷️</span>
+            {user.roles && user.roles.length > 0 ? user.roles.join(", ") : "Chưa có vai trò"}
+          </div>
         </div>
       </section>
 
-      {/* Section: Roles */}
-      {user.roles.includes("driver") && user.driverInfo && (
-        <DriverInfoCard info={user.driverInfo} />
+      {/* Section: Driver Info */}
+      {roles.includes("driver") && driver && (
+        <DriverInfoCard driver={driver} />
       )}
-
-      {user.roles.includes("rider") && user.riderInfo && (
-        <RiderInfoCard info={user.riderInfo} />
-      )}
-
-      {/* Add more role card as needed */}
     </div>
+
   )
 }
 
 // --- Driver Card ---
-function DriverInfoCard({ info }: { info: DriverInfo }) {
+function DriverInfoCard({ driver }: { driver: Driver }) {
+  // Helper hiển thị fallback
+  const displayOrDefault = (value: any, defaultValue: string = "Chưa cập nhật") => {
+    if (value === null || value === undefined || value === "") return defaultValue
+    return value
+  }
   return (
     <section className="bg-card rounded-lg p-4 shadow mb-4">
       <div className="flex items-center gap-3 mb-2">
@@ -121,60 +90,42 @@ function DriverInfoCard({ info }: { info: DriverInfo }) {
         <h3 className="text-md font-semibold">Driver Information</h3>
         <Badge
           variant="outline"
-          className={info.status === "active"
+          className={driver.status === "active"
             ? "bg-green-50 text-green-700 border-green-200"
             : "bg-yellow-50 text-yellow-700 border-yellow-200"}
         >
-          {info.status === "active" ? "Active" : "Inactive"}
+          {driver.status === "active" ? "Active" : "Inactive"}
         </Badge>
       </div>
       <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
         <div>
           <KeyRound className="inline w-4 h-4 mr-1 text-gray-400" />
-          License: <span className="font-mono">{info.driver_license}</span>
+          License: <span className="font-mono">{displayOrDefault(driver.driver_license)}</span>
         </div>
         <div>
           <Star className="inline w-4 h-4 mr-1 text-yellow-500" />
-          Rating: <span className="font-semibold">{info.ratingAverage.toFixed(2)}</span>
-          {" "}({info.ratingCount} ratings)
+          Rating: <span className="font-semibold">{driver.rating_average !== undefined && driver.rating_average !== null ? driver.rating_average.toFixed(2) : "N/A"}</span>
+          {driver.rating_count !== undefined && <> ({driver.rating_count} ratings)</>}
         </div>
         <div>
-          <span className="font-medium">Total rides:</span> {info.totalRides}
+          <span className="font-medium">Total rides:</span> {displayOrDefault(driver.total_rides, "0")}
         </div>
-        <div className="mt-2">
-          <span className="font-medium">Vehicle:</span>
-          <ul className="ml-5 list-disc">
-            <li>
-              Type: <span className="capitalize">{info.vehicle.vehicle_type}</span>
-              {info.vehicle.vehicle_type === "car" && <Car className="inline w-4 h-4 mx-1 text-blue-400" />}
-            </li>
-            <li>Brand: {info.vehicle.brand}</li>
-            <li>Model: {info.vehicle.model}</li>
-            <li>Plate: <span className="font-mono">{info.vehicle.plate_number}</span></li>
-            <li>Capacity: {info.vehicle.capacity} people</li>
-            {info.vehicle.color && <li>Color: {info.vehicle.color}</li>}
-          </ul>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// --- Rider Card (tùy context bạn mở rộng tiếp) ---
-function RiderInfoCard({ info }: { info: RiderInfo }) {
-  return (
-    <section className="bg-card rounded-lg p-4 shadow mb-4">
-      <div className="flex items-center gap-3 mb-2">
-        <User className="w-5 h-5 text-green-500" />
-        <h3 className="text-md font-semibold">Rider Information</h3>
-      </div>
-      <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-        {info.favoriteLocation && (
-          <div>
-            Favorite location: <span className="font-medium">{info.favoriteLocation}</span>
+        {driver.vehicle && (
+          <div className="mt-2">
+            <span className="font-medium">Vehicle:</span>
+            <ul className="ml-5 list-disc">
+              <li>
+                Type: <span className="capitalize">{displayOrDefault(driver.vehicle.vehicle_type)}</span>
+                {driver.vehicle.vehicle_type === "car" && <Car className="inline w-4 h-4 mx-1 text-blue-400" />}
+              </li>
+              <li>Brand: {displayOrDefault(driver.vehicle.brand)}</li>
+              <li>Model: {displayOrDefault(driver.vehicle.model)}</li>
+              <li>Plate: <span className="font-mono">{displayOrDefault(driver.vehicle.plate_number)}</span></li>
+              <li>Capacity: {displayOrDefault(driver.vehicle.capacity, "N/A")} people</li>
+              {driver.vehicle.color && <li>Color: {driver.vehicle.color}</li>}
+            </ul>
           </div>
         )}
-        {/* Thêm các field rider info tại đây */}
       </div>
     </section>
   )

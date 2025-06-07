@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
 import ProfileAvatar from "@/components/users/profile-avatar"
 import ProfileCover from "@/components/users/profile-cover"
 import ProfileTabs from "@/components/users/profile-tabs/profile-tabs"
@@ -9,30 +8,33 @@ import ProfileIntroduction from "@/components/users/profile-tabs/profile-introdu
 import ProfileActivities from "@/components/users/profile-tabs/profile-activities"
 import { userAPI, rideAPI, type Profile, type Ride } from "@/lib/api-client"
 
-export default function UserProfilePage() {
-  const params = useParams()
-  // ép về số
-  const userIdStr = params?.user_id
-  const userId = Number(userIdStr)
+interface UserProfileProps {
+  userId: number
+  className?: string
+}
 
+const DEFAULT_AVATAR = "https://randomuser.me/api/portraits/men/32.jpg"
+const DEFAULT_COVER =
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80"
+
+const UserProfile: React.FC<UserProfileProps> = ({ userId, className }) => {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [rides, setRides] = useState<Ride[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!userIdStr || isNaN(userId)) return
+    if (!userId || isNaN(userId)) return
     setLoading(true)
-    // Lấy profile và rides song song
     Promise.all([
       userAPI.getProfile(userId),
-      rideAPI.getRidesByDriver(userId), // Lấy tất cả chuyến đi của driver theo userId
+      rideAPI.getRidesByDriver(userId),
     ])
       .then(([profileData, ridesData]) => {
         setProfile(profileData)
         setRides(ridesData)
       })
       .finally(() => setLoading(false))
-  }, [userIdStr, userId])
+  }, [userId])
 
   if (loading) {
     return (
@@ -54,13 +56,13 @@ export default function UserProfilePage() {
   const { user, driver } = profile
 
   return (
-    <div>
-      <ProfileCover coverUrl={user.cover_image_url || undefined} />
+    <div className={className}>
+      <ProfileCover coverUrl={user.cover_image_url || DEFAULT_COVER} />
       {/* Avatar overlay – absolute center-bottom cover */}
       <div className="relative w-full flex justify-center">
         <div className="absolute -bottom-14">
           <ProfileAvatar
-            avatarUrl={user.avatar_url || undefined}
+            avatarUrl={user.avatar_url || DEFAULT_AVATAR}
             alt={user.name}
             size={128}
           />
@@ -72,7 +74,7 @@ export default function UserProfilePage() {
       <ProfileTabs
         tabItems={[
           { key: "introduction", label: "Introduction" },
-          { key: "activities", label: "Activites" }
+          { key: "activities", label: "Activities" }
         ]}
         children={{
           introduction: <ProfileIntroduction user={user} driver={driver} />,
@@ -82,3 +84,5 @@ export default function UserProfilePage() {
     </div>
   )
 }
+
+export default UserProfile

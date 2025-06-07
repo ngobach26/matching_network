@@ -1,14 +1,32 @@
 class PaymentsController < ApplicationController
   # POST /payments
   def create
-    # Bước 1: Nhận dữ liệu từ FE
-    service_type = params[:service_type]
-    service_id   = params[:service_id]
-    amount       = params[:amount]
-    currency     = params[:currency] || "VND"
-    payment_method = params[:payment_method] || "vnpay"
+    service_type    = params[:service_type]
+    service_id      = params[:service_id]
+    amount          = params[:amount]
+    currency        = params[:currency] || "VND"
+    payment_method  = params[:payment_method] || "vnpay"
 
-    # Bước 2: Tạo invoice
+    # Nếu là cash thì tạo invoice đã thanh toán, không tạo payment_url
+    if payment_method == "cash"
+      invoice = Invoice.create!(
+        service_type: service_type,
+        service_id: service_id,
+        amount: amount,
+        currency: currency,
+        payment_method: payment_method,
+        status: "paid"
+      )
+
+      render json: {
+        success: true,
+        invoice_id: invoice.id,
+        status: invoice.status
+      }, status: :ok
+      return
+    end
+
+    # Ngược lại, các phương thức khác xử lý thanh toán như cũ
     invoice = Invoice.create!(
       service_type: service_type,
       service_id: service_id,
@@ -18,10 +36,7 @@ class PaymentsController < ApplicationController
       status: "pending"
     )
 
-    # Bước 3: Chuẩn bị return_url để frontend xử lý kết quả
     return_url = "#{ENV['FRONTEND_BASE_URL']}/ride"
-
-    # Bước 4: Tạo URL thanh toán
     payment_service = VnpayPaymentService.new(invoice, return_url, request.remote_ip)
 
     render json: {
@@ -31,6 +46,7 @@ class PaymentsController < ApplicationController
   rescue => e
     render json: { error: e.message }, status: :unprocessable_entity
   end
+
 
   # GET /vnpay_return
   def vnpay_return
