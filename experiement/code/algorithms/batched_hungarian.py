@@ -5,6 +5,7 @@ from algorithms.greedy_nearest_neighbor import GreedyNearestNeighbor
 from models import Rider, Driver, City, DriverStatus
 from algorithms.matching_algorithm import MatchingAlgorithm
 
+
 class BatchedHungarianAlgorithm(MatchingAlgorithm):
     """Pure Python/Numpy Hungarian algorithm for assignment (no SciPy)."""
     def __init__(self):
@@ -38,11 +39,6 @@ class BatchedHungarianAlgorithm(MatchingAlgorithm):
         return matches
 
 def hungarian_algorithm(cost_matrix):
-    """
-    Simple implementation of the Hungarian (Munkres) algorithm for square cost matrices.
-    Returns a list of (row, col) assignments.
-    Reference: https://en.wikipedia.org/wiki/Hungarian_algorithm (step-by-step)
-    """
     cost = cost_matrix.copy()
     n = cost.shape[0]
     # 1. Row reduction
