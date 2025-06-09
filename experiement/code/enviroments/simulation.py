@@ -5,6 +5,7 @@ import numpy as np
 from datetime import datetime, timedelta
 import heapq
 from tqdm import tqdm
+import time
 
 RUSH_HOUR = [(0, 2), (14, 17)]
 MAX_WAIT_TIME_MINS = 15  # Maximum wait time before cancellation (in minutes)
@@ -45,6 +46,7 @@ class Simulation:
             'driver_earnings': [],   # (time, driver_id, earnings)
             'matches': [],           # (time, rider_id, driver_id)
             'cancellations': [],     # (time, rider_id, reason)
+            'batch_runtime': [],   # (time, batch_runtime_seconds)
         }
     
     def initialize_from_data(self, driver_data_path: str, trip_data_path: str, 
@@ -196,9 +198,25 @@ class Simulation:
         
         if not available_drivers:
             return
-            
+
+        # === Đo thời gian bắt đầu ===
+        start_time = time.perf_counter()
+
         # Run matching algorithm
-        matches = self.matching_algorithm.match(waiting_riders, available_drivers, self.city, self.current_time)
+        try:
+            # Nếu match() của thuật toán nhận thêm sim (Bandit), truyền vào
+            matches = self.matching_algorithm.match(waiting_riders, available_drivers, self.city, self.current_time, sim=self)
+        except TypeError:
+            # Nếu không nhận, fallback cho thuật toán cũ
+            matches = self.matching_algorithm.match(waiting_riders, available_drivers, self.city, self.current_time)
+
+        
+        # === Đo thời gian kết thúc ===
+        end_time = time.perf_counter()
+        runtime = end_time - start_time
+        
+        # Ghi lại thời gian batch này
+        self.time_series['batch_runtime'].append((self.current_time, runtime))
         
         # Process matches
         for rider, driver in matches:

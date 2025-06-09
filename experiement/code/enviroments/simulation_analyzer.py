@@ -319,7 +319,7 @@ class SimulationAnalyzer:
     def plot_metrics_comparison(self, metrics_list, algorithm_names):
         """
         Compare metrics across different algorithms
-        
+
         Args:
             metrics_list: List of metrics dictionaries from different algorithm runs
             algorithm_names: List of algorithm names
@@ -330,62 +330,65 @@ class SimulationAnalyzer:
             'Avg Waiting Time (s)': [m['avg_waiting_time'] for m in metrics_list],
             'Avg Trip Time (s)': [m['avg_trip_time'] for m in metrics_list],
             'Avg Driver Earnings ($)': [m['avg_driver_earnings'] for m in metrics_list],
-            # 'Gini Coefficient': [m.get('gini_coefficient', 0) for m in metrics_list],
             'Avg Empty Miles': [m['avg_empty_miles'] for m in metrics_list],
             'Cancellation Rate': [m.get('cancellation_rate', 0) for m in metrics_list],
         })
-        
-        # Create subplots
+
+        # Create subplots: 3 rows x 2 columns
         fig, axes = plt.subplots(3, 2, figsize=(15, 18))
-        
-        # Plot comparisons and add labels
+
+        # 1. Average Waiting Time
         ax1 = sns.barplot(x='Algorithm', y='Avg Waiting Time (s)', data=comparison, ax=axes[0, 0])
-        for i, p in enumerate(ax1.patches):
+        for p in ax1.patches:
             height = p.get_height()
-            ax1.text(p.get_x() + p.get_width()/2., height + 5,
-                  f'{height:.1f}', ha='center')
+            ax1.text(p.get_x() + p.get_width() / 2., height + 5, f'{height:.1f}', ha='center')
         axes[0, 0].set_title('Average Waiting Time')
+        axes[0, 0].set_ylabel('Avg Waiting Time (s)')
         axes[0, 0].grid(True, axis='y')
-        
-        ax2 = sns.barplot(x='Algorithm', y='Avg Driver Earnings ($)', data=comparison, ax=axes[0, 1])
-        for i, p in enumerate(ax2.patches):
+
+        # 2. Average Trip Time
+        ax2 = sns.barplot(x='Algorithm', y='Avg Trip Time (s)', data=comparison, ax=axes[0, 1])
+        for p in ax2.patches:
             height = p.get_height()
-            ax2.text(p.get_x() + p.get_width()/2., height + 0.2,
-                  f'${height:.2f}', ha='center')
-        axes[0, 1].set_title('Average Driver Earnings')
+            ax2.text(p.get_x() + p.get_width() / 2., height + 5, f'{height:.1f}', ha='center')
+        axes[0, 1].set_title('Average Trip Time')
+        axes[0, 1].set_ylabel('Avg Trip Time (s)')
         axes[0, 1].grid(True, axis='y')
-        
-        # ax3 = sns.barplot(x='Algorithm', y='Gini Coefficient', data=comparison, ax=axes[1, 0])
-        # for i, p in enumerate(ax3.patches):
-        #     height = p.get_height()
-        #     ax3.text(p.get_x() + p.get_width()/2., height + 0.005,
-        #           f'{height:.3f}', ha='center')
-        # axes[1, 0].set_title('Earnings Inequality (Gini)')
-        # axes[1, 0].grid(True, axis='y')
-        
+
+        # 3. Average Driver Earnings
+        ax3 = sns.barplot(x='Algorithm', y='Avg Driver Earnings ($)', data=comparison, ax=axes[1, 0])
+        for p in ax3.patches:
+            height = p.get_height()
+            ax3.text(p.get_x() + p.get_width() / 2., height + 0.2, f'${height:.2f}', ha='center')
+        axes[1, 0].set_title('Average Driver Earnings')
+        axes[1, 0].set_ylabel('Avg Driver Earnings ($)')
+        axes[1, 0].grid(True, axis='y')
+
+        # 4. Average Empty Miles
         ax4 = sns.barplot(x='Algorithm', y='Avg Empty Miles', data=comparison, ax=axes[1, 1])
-        for i, p in enumerate(ax4.patches):
+        for p in ax4.patches:
             height = p.get_height()
-            ax4.text(p.get_x() + p.get_width()/2., height + 0.05,
-                  f'{height:.2f}', ha='center')
+            ax4.text(p.get_x() + p.get_width() / 2., height + 0.05, f'{height:.2f}', ha='center')
         axes[1, 1].set_title('Average Empty Miles')
+        axes[1, 1].set_ylabel('Avg Empty Miles')
         axes[1, 1].grid(True, axis='y')
-        
+
+        # 5. Cancellation Rate
         ax5 = sns.barplot(x='Algorithm', y='Cancellation Rate', data=comparison, ax=axes[2, 0])
-        for i, p in enumerate(ax5.patches):
+        for p in ax5.patches:
             height = p.get_height()
-            ax5.text(p.get_x() + p.get_width()/2., height + 0.01,
-                  f'{height:.1%}', ha='center')
+            ax5.text(p.get_x() + p.get_width() / 2., height + 0.01, f'{height:.1%}', ha='center')
         axes[2, 0].set_title('Cancellation Rate')
-        axes[2, 0].grid(True, axis='y')
         axes[2, 0].set_ylabel('Cancellation Rate (%)')
         axes[2, 0].set_ylim(0, min(1, max(comparison['Cancellation Rate']) * 1.2 or 0.1))
-        
-        # Empty subplot for symmetry or future use
+        axes[2, 0].grid(True, axis='y')
+
+        # 6. Hide last subplot if unused
         axes[2, 1].axis('off')
-        
+
         plt.tight_layout()
         return plt
+
     
     def generate_complete_analysis(self, output_dir=None):
         """Generate and save all analysis plots"""
@@ -409,3 +412,60 @@ class SimulationAnalyzer:
                 plot.close()
         
         return plots
+
+
+    def plot_avg_batch_runtime_bar(self, simulations, algorithm_names):
+        """Plot trung bình thời gian chạy mỗi batch của từng thuật toán dưới dạng biểu đồ cột."""
+        avg_runtimes = []
+        for sim in simulations:
+            batch_runtimes = [rt for t, rt in sim.time_series['batch_runtime']]
+            avg = np.mean(batch_runtimes) if batch_runtimes else 0
+            avg_runtimes.append(avg)
+        fig, ax = plt.subplots(figsize=(8, 5))
+        bars = ax.bar(algorithm_names, avg_runtimes)
+        for bar, val in zip(bars, avg_runtimes):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2, height + max(avg_runtimes)*0.01,
+                    f"{val:.3f}s", ha='center', va='bottom', fontsize=12)
+        ax.set_title("Trung bình thời gian chạy mỗi batch")
+        ax.set_ylabel("Thời gian chạy trung bình/batch (giây)")
+        ax.set_xlabel("Thuật toán")
+        ax.grid(axis='y', alpha=0.2)
+        plt.tight_layout()
+        return plt
+
+    def plot_batch_runtime_comparison(self, simulations, algorithm_names):
+        """Plot batch runtime theo thời gian cho các thuật toán."""
+        plt.figure(figsize=(14, 7))
+        for sim, name in zip(simulations, algorithm_names):
+            ts = sim.time_series if hasattr(sim, 'time_series') else sim.simulation.time_series
+            batch_runtime = ts['batch_runtime']
+            if not batch_runtime:
+                continue
+            times, runtimes = zip(*batch_runtime)
+            start_time = times[0]
+            times_mins = [(t - start_time).total_seconds() / 60 for t in times]
+            plt.plot(times_mins, runtimes, marker='o', label=name, linewidth=2)
+        plt.title('Batch Runtime per Algorithm (Lower = Better)')
+        plt.xlabel('Simulation Time (minutes)')
+        plt.ylabel('Batch Runtime (seconds)')
+        plt.legend()
+        plt.grid(True, alpha=0.2)
+        plt.tight_layout()
+        return plt
+
+    def plot_total_runtime_bar(self, metrics_list, algorithm_names):
+        """Plot tổng thời gian chạy (runtime_seconds) của mỗi thuật toán dưới dạng biểu đồ cột."""
+        runtimes = [m.get('runtime_seconds', 0) for m in metrics_list]
+        fig, ax = plt.subplots(figsize=(8, 5))
+        bars = ax.bar(algorithm_names, runtimes)
+        for bar, val in zip(bars, runtimes):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2, height + max(runtimes)*0.01,
+                    f"{val:.2f}s", ha='center', va='bottom', fontsize=12)
+        ax.set_title("Tổng thời gian chạy mỗi thuật toán")
+        ax.set_ylabel("Thời gian chạy (giây)")
+        ax.set_xlabel("Thuật toán")
+        ax.grid(axis='y', alpha=0.2)
+        plt.tight_layout()
+        return plt

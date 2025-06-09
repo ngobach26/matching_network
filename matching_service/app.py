@@ -157,9 +157,9 @@ def run() -> None:
 # FLUSH & MATCH
 # --------------------------------------------------------------------------- #
 def flush_buffer(buf: dict) -> None:
-    start_ts = time.time()
     commit_msgs = []
     for gh, items in buf.items():
+        start_ts = time.time()  # Đặt trong từng vòng lặp để đo runtime cho mỗi gh
         if not items:
             continue
 
@@ -186,6 +186,8 @@ def flush_buffer(buf: dict) -> None:
             for req, h, m in items:
                 schedule_retry(req, h, m, "no_driver")
                 commit_msgs.append(m)
+            # Update service stats cho gh này với batch_len đúng nhưng runtime_sec = 0
+            _update_service_stats(gh, 0, len(items))
             continue
 
         # Build preference cho stable_matching (dùng dict)
@@ -198,7 +200,6 @@ def flush_buffer(buf: dict) -> None:
             max_distance=max_distance,
             min_driver_rating=min_driver_rating
         )
-
 
         print(f"🔧 Using algorithm: {algorithm} (geo={gh}) config={config}")
 
@@ -258,8 +259,10 @@ def flush_buffer(buf: dict) -> None:
             commit_msgs.append(raw_msg)
             print("✅ produced result", result)
 
-    runtime_sec = time.time() - start_ts              # bạn tạo start_ts = time.time() ở đầu hàm
-    _update_service_stats(gh, runtime_sec, len(items))
+        # Update service stats cho mỗi gh
+        runtime_sec = time.time() - start_ts
+        _update_service_stats(gh, runtime_sec, len(items))
+
     producer.flush()
     if commit_msgs:
         consumer.commit(offsets=[TopicPartition(m.topic(), m.partition(), m.offset()+1) for m in commit_msgs], asynchronous=False)
