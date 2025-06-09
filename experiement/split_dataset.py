@@ -2,12 +2,13 @@ import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 import pandas as pd
 from datetime import datetime
+import pyarrow as pa
 
 # Parameters
-source_path = "data/fhvhv_tripdata_2025-01.parquet"  # full file
-output_path = "data/2h.parquet"            # filtered small file
-start_time = "2025-01-01 00:00:00"
-end_time   = "2025-01-01 02:00:00"
+source_path = r"d:\datn\matching_network\experiement\data\fhvhv_tripdata_2025-01.parquet"
+output_path = r"d:\datn\matching_network\experiement\data\sample1.parquet"
+start_time = "2025-01-01 08:00:00"
+end_time   = "2025-01-01 08:10:00"
 
 # Convert to pandas Timestamp for consistency
 start_ts = pd.to_datetime(start_time)
@@ -24,6 +25,11 @@ filtered_table = dataset.to_table(
     )
 )
 
-# Step 3: Save to smaller Parquet file
-pq.write_table(filtered_table, output_path)
-print(f"✅ Sample saved to {output_path} with {filtered_table.num_rows} rows")
+# Step 3: Convert to pandas and sample 10%
+filtered_df = filtered_table.to_pandas()
+sampled_df = filtered_df.sample(frac=0.05, random_state=42)   # Lấy 10% ngẫu nhiên
+
+# Step 4: Lưu lại thành parquet nhỏ
+sampled_table = pa.Table.from_pandas(sampled_df)
+pq.write_table(sampled_table, output_path)
+print(f"✅ Sample saved to {output_path} with {sampled_df.shape[0]} rows")

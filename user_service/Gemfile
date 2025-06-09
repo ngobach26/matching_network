@@ -6,6 +6,7 @@ gem "rails", "~> 8.0.2"
 gem "mysql2", "~> 0.5"
 gem "devise", "~> 4.9", ">= 4.9.3"
 gem "devise-jwt", "~> 0.12.1"
+gem "httparty"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
@@ -20,6 +21,7 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 # Use the database-backed adapters for Rails.cache, Active Job, and Action Cable
 gem "solid_cache"
 gem "solid_queue"
+gem "faker"
 gem "solid_cable"
 
 # Reduces boot times through caching; required in config/boot.rb

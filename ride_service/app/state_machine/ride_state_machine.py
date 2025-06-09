@@ -1,9 +1,12 @@
+from datetime import datetime
 from transitions import Machine
-from app.models import RideDetail
+from app.models import Ride
+
 
 class RideStateMachine:
     # 1) Define all possible states
     states = [
+        "pending",
         "accepted",
         "arrived",
         "picked_up",
@@ -14,6 +17,11 @@ class RideStateMachine:
 
     # 2) Define allowed transitions
     transitions = [
+        {
+            "trigger": "accept",
+            "source": "pending",
+            "dest": "accepted",
+        },
         {
             "trigger": "arrive",
             "source": "accepted",
@@ -31,20 +39,18 @@ class RideStateMachine:
         },
         {
             "trigger": "complete",
-            # you may allow completing from either ongoing or picked_up
-            "source": ["ongoing", "picked_up"],
+            "source": "ongoing",
             "dest": "completed",
         },
         {
             "trigger": "cancel",
-            "source": "*",  # can cancel from any state
+            "source": "*",
             "dest": "cancelled",
         },
     ]
 
-    def __init__(self, ride: RideDetail):
+    def __init__(self, ride: Ride):
         self.ride = ride
-        # 3) Build the Machine, telling it to store the current state on .state
         self.machine = Machine(
             model=self,
             states=self.states,
@@ -54,5 +60,15 @@ class RideStateMachine:
         )
 
     def sync_to_model(self):
-        """Callback after any transition to update the RideDetail."""
+        """Callback after any transition to update the Ride model fields."""
         self.ride.status = self.state
+        now = datetime.now()
+
+        if self.state == "accepted":
+            self.ride.matched_at = now
+        elif self.state == "arrived":
+            self.ride.arrived_at = now
+        elif self.state == "ongoing":
+            self.ride.start_at = now
+        elif self.state == "completed":
+            self.ride.end_at = now

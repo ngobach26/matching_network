@@ -2,60 +2,55 @@
 
 import { useSession, signIn, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { authAPI, type UserProfile } from "@/lib/api-client"
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
+import { setUser, clearUser, fetchUserProfile, setUserId } from "@/lib/redux/slices/userSlice"
+import { clearDriver } from "@/lib/redux/slices/driverSlice"
 
 export function useAuth() {
   const { data: session, status, update: updateSession } = useSession()
   const router = useRouter()
-  const isAuthenticated = status === "authenticated"
-  const isLoading = status === "loading"
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const dispatch = useAppDispatch()
+  const {
+    profile: userProfile,
+    userId,
+    isAuthenticated,
+    status: profileStatus,
+    error: profileError,
+  } = useAppSelector((state) => state.user)
   const [profileLoading, setProfileLoading] = useState(false)
-  const [profileError, setProfileError] = useState<string | null>(null)
 
+  // Set userId in Redux when session changes
   useEffect(() => {
-    // If we have a session, update localStorage for backward compatibility
-    if (isAuthenticated) {
-      localStorage.setItem("isLoggedIn", "true")
+    if (session?.user?.id && !userId) {
+      dispatch(setUserId(Number(session.user.id)))
     }
-  }, [isAuthenticated])
+  }, [session, userId, dispatch])
 
-  // Fetch user profile when authenticated
-  useEffect(() => {
-    if (isAuthenticated && !userProfile && !profileLoading) {
-      fetchUserProfile()
-    }
-  }, [isAuthenticated, userProfile, profileLoading])
-
-  const fetchUserProfile = async () => {
+  const fetchUserProfileData = async () => {
     if (!isAuthenticated) return null
 
-    setProfileLoading(true)
-    setProfileError(null)
-
     try {
-      const profile = await authAPI.getCurrentUser()
-      setUserProfile(profile)
-      return profile
-    } catch (error: any) {
+      const resultAction = await dispatch(fetchUserProfile()).unwrap()
+      return resultAction
+    } catch (error) {
       console.error("Error fetching user profile:", error)
-      setProfileError(error.message || "Failed to fetch user profile")
       return null
-    } finally {
-      setProfileLoading(false)
     }
   }
 
-  const updateUserProfile = async (userData: Partial<UserProfile>) => {
+  const updateUserProfileData = async (userData: Partial<UserProfile>) => {
     if (!isAuthenticated) return null
 
     setProfileLoading(true)
-    setProfileError(null)
 
     try {
+      // Update the profile in the API
       const updatedProfile = await authAPI.updateProfile(userData)
-      setUserProfile(updatedProfile)
+
+      // Update Redux store
+      dispatch(setUser(updatedProfile))
 
       // Update the session with new user data if name changed
       if (userData.name && userData.name !== session?.user?.name) {
@@ -71,7 +66,6 @@ export function useAuth() {
       return updatedProfile
     } catch (error: any) {
       console.error("Error updating user profile:", error)
-      setProfileError(error.message || "Failed to update user profile")
       return null
     } finally {
       setProfileLoading(false)
@@ -88,6 +82,12 @@ export function useAuth() {
 
       if (result?.error) {
         throw new Error(result.error)
+      }
+
+      // After successful login, fetch the user profile and update Redux
+      if (result?.ok) {
+        const profile = await authAPI.getCurrentUser()
+        dispatch(setUser(profile))
       }
 
       return result
@@ -107,48 +107,76 @@ export function useAuth() {
     }
   }
 
-  const signup = async (email: string, password: string) => {
-    try {
-      // Use the authAPI to register the user
-      const response = await authAPI.signup({ email, password })
+  // Accepts a user object instead of just email and password
+const signup = async (userData: {
+  name: string
+  email: string
+  password: string
+  phone_number: string
+  date_of_birth?: string
+}) => {
+  try {
+    // Use the authAPI to register the user
+    const response = await authAPI.signup(userData)
 
-      // After successful signup, automatically log the user in
-      await login(email, password)
+    // After successful signup, automatically log the user in
+    // You can still use email and password to log in
+    await login(userData.email, userData.password)
 
-      return response
-    } catch (error: any) {
-      console.error("Signup error:", error)
+    return response
+  } catch (error: any) {
+    console.error("Signup error:", error)
 
-      // Extract error message from the API response if available
-      if (error.response?.data?.errors) {
-        const errorMessages = Object.entries(error.response.data.errors)
-          .map(([key, value]) => `${key} ${value}`)
-          .join(", ")
-        throw new Error(errorMessages)
-      }
-
-      throw new Error(error.message || "Failed to create account")
+    // Extract error message from the API response if available
+    if (error.response?.data?.errors) {
+      const errorMessages = Object.entries(error.response.data.errors)
+        .map(([key, value]) => `${key} ${value}`)
+        .join(", ")
+      throw new Error(errorMessages)
     }
+
+    throw new Error(error.message || "Failed to create account")
   }
+}
+
 
   const logout = async () => {
-    localStorage.removeItem("isLoggedIn")
-    setUserProfile(null)
+    // Clear Redux state
+    dispatch(clearUser())
+    dispatch(clearDriver())
+
+    // Sign out from NextAuth
     await signOut({ redirect: false })
     router.push("/")
   }
 
+  useEffect(() => {
+    // Khi trạng thái xác thực chuyển sang "authenticated" và userProfile chưa có -> fetch profile từ API
+    if (status === "authenticated" && !userProfile) {
+      authAPI.getCurrentUser()
+        .then((profile) => {
+          dispatch(setUser(profile))
+        })
+        .catch((err) => {
+          console.error("Failed to load user profile on init", err)
+        })
+    }
+    // Nếu bạn lưu profile ở localStorage, có thể lấy ở đây nếu muốn
+  }, [status, userProfile, dispatch])
+  
+
   return {
     session,
-    isAuthenticated,
-    isLoading,
+    userId,
+    isAuthenticated: isAuthenticated || status === "authenticated",
+    isLoading: status === "loading" || profileStatus === "loading",
     login,
     signup,
     logout,
     userProfile,
     profileLoading,
     profileError,
-    fetchUserProfile,
-    updateUserProfile,
+    fetchUserProfile: fetchUserProfileData,
+    updateUserProfile: updateUserProfileData,
   }
 }

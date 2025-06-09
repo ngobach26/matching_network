@@ -8,14 +8,19 @@ Rails.application.routes.draw do
     sessions: "users/sessions",
     registrations: "users/registrations"
   }
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
+  # Health check
   get "up" => "rails/health#show", as: :rails_health_check
+
+  # User profile routes
   get "me", to: "users/users#me"
   patch "me", to: "users/users#update"
+  get "users", to: "users/users#index"
+  get "users/:id", to: "users/users#show" # <-- thêm dòng này
 
-  # Defines the root path route ("/")
+  # Payments
+  resources :payments, only: [ :create ]
+  get "/vnpay_return", to: "payments#vnpay_return", as: :vnpay_return
+
   # root "posts#index"
 end

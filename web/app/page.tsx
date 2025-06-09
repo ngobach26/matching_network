@@ -1,38 +1,31 @@
 "use client"
 
 import type React from "react"
-
-import { useEffect, useState } from "react"
+import { redirect } from "next/navigation"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { useRoleContext } from "@/context/role-context"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 
-export default function Home() {
+export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { roles } = useRoleContext()
   const { isAuthenticated, login } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    // Redirect based on roles
+    // Redirect if already authenticated
     if (isAuthenticated) {
-      if (roles.length > 0) {
-        router.push("/dashboard")
-      } else {
-        router.push("/profile")
-      }
+      router.push("/dashboard")
     }
-  }, [isAuthenticated, roles, router])
+  }, [isAuthenticated, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,18 +44,35 @@ export default function Home() {
   }
 
   if (isAuthenticated) {
-    return null // Will redirect via useEffect
+    redirect("/dashboard")
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">Welcome to Multi-Role Platform</CardTitle>
-          <CardDescription className="text-center">Sign in to access your account</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
+    <div className="flex min-h-screen">
+      {/* Left side: Image */}
+      <div className="hidden md:block md:w-1/2 bg-orange-500">
+        <div
+          className="h-full w-full bg-cover bg-center"
+          style={{ backgroundImage: "url('/placeholder.svg?height=1080&width=1080')" }}
+        >
+          <div className="h-full w-full flex flex-col justify-center items-center bg-black bg-opacity-40 text-white p-12">
+            <h1 className="text-4xl font-bold mb-4">Welcome to SmartMatch</h1>
+            <p className="text-xl max-w-md text-center">
+              Your journey begins here. Sign in to access rides or start driving.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right side: Form */}
+      <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-orange-500">Sign In</h2>
+            <p className="text-gray-600 mt-2">Access your SmartMatch account</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-6">
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -79,20 +89,27 @@ export default function Home() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="w-full"
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex justify-between items-center">
+                <Label htmlFor="password">Password</Label>
+                <Link href="#" className="text-sm text-orange-500 hover:text-orange-600">
+                  Forgot password?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="w-full"
               />
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
+
             <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}
             </Button>
@@ -103,9 +120,9 @@ export default function Home() {
                 Sign Up
               </Link>
             </div>
-          </CardFooter>
-        </form>
-      </Card>
+          </form>
+        </div>
+      </div>
     </div>
   )
 }

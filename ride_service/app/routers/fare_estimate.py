@@ -1,41 +1,42 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-import math
-from app.models.common import Coordinates
+from typing import Dict
+from app.models import Fare
 
 router = APIRouter()
 
 class FareEstimateInput(BaseModel):
-    pickup_location: Coordinates
-    dropoff_location: Coordinates
+    estimated_distance: float
+    estimated_duration: float
 
-@router.post("/")
+@router.post("/", response_model=Dict[str, Fare])
 async def fare_estimate(data: FareEstimateInput):
-    distance_km = haversine_km(
-        data.pickup_location.lat, data.pickup_location.lng,
-        data.dropoff_location.lat, data.dropoff_location.lng
-    )
-
     pricing_rules = {
-        "bike":    {"base_fare": 10000, "per_km": 4000},
-        "car":     {"base_fare": 15000, "per_km": 8000},
-        "premium": {"base_fare": 30000, "per_km": 15000},
+        "bike":    {"base_fare": 10000, "per_km": 4000, "platform_fee": 3000},
+        "car":     {"base_fare": 15000, "per_km": 8000, "platform_fee": 5000},
+        "premium": {"base_fare": 30000, "per_km": 15000, "platform_fee": 8000},
     }
 
-    estimates = {}
+    estimates: Dict[str, Fare] = {}
+
     for ride_type, rule in pricing_rules.items():
-        fare = rule["base_fare"] + rule["per_km"] * max(distance_km, 1.0)
-        estimates[ride_type] = round(fare)
+        base = rule["base_fare"]
+        distance_fare = rule["per_km"] * max(data.estimated_distance, 1.0)
+        platform_fee = rule["platform_fee"]
 
-    return {
-        "estimated_fares": estimates,
-        "estimated_distance": round(distance_km, 2)
-    }
+        subtotal = base + distance_fare
+        total = subtotal
+        driver_earnings = total - platform_fee
 
-def haversine_km(lat1, lon1, lat2, lon2):
-    R = 6371
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    d_phi = math.radians(lat2 - lat1)
-    d_lambda = math.radians(lon2 - lon1)
-    a = math.sin(d_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
-    return R * (2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
+        estimates[ride_type] = Fare(
+            base_fare=base,
+            distance_fare=distance_fare,
+            time_fare=0.0,
+            platform_fee=platform_fee,
+            total_fare=total,
+            driver_earnings=driver_earnings,
+        )
+
+    return estimates
+
+

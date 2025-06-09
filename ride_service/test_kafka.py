@@ -7,7 +7,7 @@ import time
 p = Producer({'bootstrap.servers': 'kafka:9092'})
 
 def send_rider_request(rider_id, lat, lng):
-    geohash = gh.encode(lat, lng, precision=5)
+    geohash = gh.encode(lat, lng, precision=4)
     payload = {
         "rider_id": rider_id,
         "lat": lat,

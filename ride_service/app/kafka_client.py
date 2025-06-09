@@ -2,12 +2,23 @@ from fastapi import HTTPException
 from confluent_kafka import Producer
 import os
 import json
+from app.models import Ride
 
 producer = Producer({
     "bootstrap.servers": os.getenv("KAFKA_BROKERS", "kafka:9092")
 })
 
-def send_ride_request_to_kafka(message):
+def send_ride_request_to_kafka(ride: Ride):
+    message = {
+        "ride_id": ride.id,
+        "rider_id": ride.rider_id,
+        "geohash": ride.geohash,
+        "lat": ride.pickup_location.coordinate.lat,
+        "lng": ride.pickup_location.coordinate.lng,
+        "ride_type": ride.ride_type,
+        "fare": ride.fare.model_dump() if hasattr(ride.fare, "model_dump") else ride.fare,
+        "requested_at": ride.created_at.isoformat()
+    }
     try:
         producer.produce(
             topic="ride-matching-requests",
@@ -41,7 +52,7 @@ def send_ride_event_to_kafka(ride):
     
 def notify_rider_match_found(rider_id: int, ride_result_id: str):
     message = {
-        "event": "ride_request_matched",
+        "event": "driver_found",
         "rider_id": rider_id,
         "ride_id": ride_result_id,
     }

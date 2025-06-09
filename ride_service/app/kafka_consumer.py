@@ -12,7 +12,7 @@ producer = Producer({"bootstrap.servers": "kafka:9092"})
 # Mongo client
 mongo = AsyncIOMotorClient("mongodb://mongo:27017/")
 db = mongo["ride_service"]
-ride_requests = db["ride_requests"]
+rides_collection = db["rides"]
 
 # Kafka consumer config
 conf = {
@@ -39,7 +39,7 @@ async def consume_kafka_matching():
 
             topic = msg.topic()
             data = json.loads(msg.value())
-            ride_request_id = data["ride_request_id"]
+            ride_id = data["ride_id"]
 
             if topic == "ride-matching-results":
                 rider_id = data["rider_id"]
@@ -48,25 +48,25 @@ async def consume_kafka_matching():
 
                 event = {
                     "event": "ride_request_matched",
-                    "ride_request_id": ride_request_id,
+                    "ride_id": ride_id,
                     "driver_id": driver_id,
                 }
 
             elif topic == "ride-matching-failed":
                 rider_id = data.get("rider_id")
                 reason = data.get("timeout_reason") or data.get("failed_reason", "unknown")
-                print(f"⛔ Match failed: ride_request_id {ride_request_id} – reason: {reason}", flush=True)
+                print(f"⛔ Match failed: ride_id {ride_id} – reason: {reason}", flush=True)
 
                 event = {
                     "event": "ride_request_failed",
-                    "ride_request_id": ride_request_id,
+                    "ride_id": ride_id,
                     "rider_id": rider_id,
                     "reason": reason,
                 }
 
                 # 🛠️ Update ride_request document in MongoDB
-                update_result = await ride_requests.update_one(
-                    {"_id": ride_request_id},
+                update_result = await rides_collection.update_one(
+                    {"_id": ride_id},
                     {
                         "$set": {
                             "status": "cancelled",
@@ -78,9 +78,9 @@ async def consume_kafka_matching():
                 )
 
                 if update_result.matched_count == 0:
-                    print(f"⚠️  ride_request {ride_request_id} not found in DB", flush=True)
+                    print(f"⚠️  ride_request {ride_id} not found in DB", flush=True)
                 else:
-                    print(f"📝 Updated ride_request {ride_request_id} as cancelled", flush=True)
+                    print(f"📝 Updated ride_request {ride_id} as cancelled", flush=True)
 
             else:
                 print(f"⚠️ Unknown topic: {topic}")
@@ -88,7 +88,7 @@ async def consume_kafka_matching():
 
             producer.produce(
                 topic="ride-request-events",
-                key=ride_request_id,
+                key=ride_id,
                 value=json.dumps(event).encode("utf-8")
             )
             producer.flush()
