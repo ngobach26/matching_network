@@ -415,7 +415,7 @@ class SimulationAnalyzer:
 
 
     def plot_avg_batch_runtime_bar(self, simulations, algorithm_names):
-        """Plot trung bình thời gian chạy mỗi batch của từng thuật toán dưới dạng biểu đồ cột."""
+        """Plot avg run timetime."""
         avg_runtimes = []
         for sim in simulations:
             batch_runtimes = [rt for t, rt in sim.time_series['batch_runtime']]
@@ -427,15 +427,15 @@ class SimulationAnalyzer:
             height = bar.get_height()
             ax.text(bar.get_x() + bar.get_width()/2, height + max(avg_runtimes)*0.01,
                     f"{val:.3f}s", ha='center', va='bottom', fontsize=12)
-        ax.set_title("Trung bình thời gian chạy mỗi batch")
-        ax.set_ylabel("Thời gian chạy trung bình/batch (giây)")
-        ax.set_xlabel("Thuật toán")
+        ax.set_title("Average Batch Runtime per Algorithm")
+        ax.set_ylabel("Average Runtime (seconds)")
+        ax.set_xlabel("Algorithm")
         ax.grid(axis='y', alpha=0.2)
         plt.tight_layout()
         return plt
 
     def plot_batch_runtime_comparison(self, simulations, algorithm_names):
-        """Plot batch runtime theo thời gian cho các thuật toán."""
+        """Plot batch runtime comparison for multiple algorithms."""
         plt.figure(figsize=(14, 7))
         for sim, name in zip(simulations, algorithm_names):
             ts = sim.time_series if hasattr(sim, 'time_series') else sim.simulation.time_series
@@ -455,7 +455,7 @@ class SimulationAnalyzer:
         return plt
 
     def plot_total_runtime_bar(self, metrics_list, algorithm_names):
-        """Plot tổng thời gian chạy (runtime_seconds) của mỗi thuật toán dưới dạng biểu đồ cột."""
+        """Plot total run time."""
         runtimes = [m.get('runtime_seconds', 0) for m in metrics_list]
         fig, ax = plt.subplots(figsize=(8, 5))
         bars = ax.bar(algorithm_names, runtimes)
@@ -463,9 +463,9 @@ class SimulationAnalyzer:
             height = bar.get_height()
             ax.text(bar.get_x() + bar.get_width()/2, height + max(runtimes)*0.01,
                     f"{val:.2f}s", ha='center', va='bottom', fontsize=12)
-        ax.set_title("Tổng thời gian chạy mỗi thuật toán")
-        ax.set_ylabel("Thời gian chạy (giây)")
-        ax.set_xlabel("Thuật toán")
+        ax.set_title("Total Runtime per Algorithm")
+        ax.set_ylabel("Total Runtime (seconds)")
+        ax.set_xlabel("Algorithm")
         ax.grid(axis='y', alpha=0.2)
         plt.tight_layout()
         return plt

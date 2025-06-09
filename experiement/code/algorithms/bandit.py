@@ -12,7 +12,6 @@ class BanditMatchingAlgorithm:
         self.batch_idx = 0
 
     def match(self, riders, drivers, city, current_time, sim=None):
-        # Build context (hàm build_context định nghĩa ở dưới)
         context = build_context(sim, self.batch_idx) if sim else np.zeros(self.agent.d)
         chosen_idx = self.agent.select(context)
         chosen_algo = self.algorithms[chosen_idx]
