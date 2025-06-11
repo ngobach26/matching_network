@@ -6,9 +6,9 @@ import pyarrow as pa
 
 # Parameters
 source_path = r"d:\datn\matching_network\experiement\data\fhvhv_tripdata_2025-01.parquet"
-output_path = r"d:\datn\matching_network\experiement\data\sample1.parquet"
+output_path = r"d:\datn\matching_network\experiement\data\sample2.parquet"
 start_time = "2025-01-01 08:00:00"
-end_time   = "2025-01-01 08:10:00"
+end_time   = "2025-01-01 10:00:00"
 
 # Convert to pandas Timestamp for consistency
 start_ts = pd.to_datetime(start_time)
@@ -27,7 +27,7 @@ filtered_table = dataset.to_table(
 
 # Step 3: Convert to pandas and sample 10%
 filtered_df = filtered_table.to_pandas()
-sampled_df = filtered_df.sample(frac=0.05, random_state=42)   # Lấy 10% ngẫu nhiên
+sampled_df = filtered_df.sample(frac=0.1, random_state=42)   # Lấy 10% ngẫu nhiên
 
 # Step 4: Lưu lại thành parquet nhỏ
 sampled_table = pa.Table.from_pandas(sampled_df)

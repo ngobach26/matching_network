@@ -437,7 +437,13 @@ class SimulationAnalyzer:
     def plot_batch_runtime_comparison(self, simulations, algorithm_names):
         """Plot batch runtime comparison for multiple algorithms."""
         plt.figure(figsize=(14, 7))
-        for sim, name in zip(simulations, algorithm_names):
+
+        # Các style để tránh trùng
+        linestyles = ['-', '--', '-.', ':']
+        markers = ['o', 's', 'D', '^', 'v', '<', '>', 'p', '*', 'h', 'x', '+']
+        colors = plt.cm.tab10.colors  # 10 màu nổi bật
+
+        for idx, (sim, name) in enumerate(zip(simulations, algorithm_names)):
             ts = sim.time_series if hasattr(sim, 'time_series') else sim.simulation.time_series
             batch_runtime = ts['batch_runtime']
             if not batch_runtime:
@@ -445,7 +451,26 @@ class SimulationAnalyzer:
             times, runtimes = zip(*batch_runtime)
             start_time = times[0]
             times_mins = [(t - start_time).total_seconds() / 60 for t in times]
-            plt.plot(times_mins, runtimes, marker='o', label=name, linewidth=2)
+
+            # Lựa chọn style
+            linestyle = linestyles[idx % len(linestyles)]
+            marker = markers[idx % len(markers)]
+            color = colors[idx % len(colors)]
+            # Jitter nhẹ nếu muốn (comment nếu không cần)
+            jitter = np.random.uniform(-0.04, 0.04, size=len(runtimes)) if len(simulations) > 1 else 0
+            runtimes_jittered = np.array(runtimes) + jitter
+
+            plt.plot(
+                times_mins,
+                runtimes_jittered,
+                marker=marker,
+                label=name,
+                linewidth=2,
+                linestyle=linestyle,
+                color=color,
+                alpha=0.9,
+                markersize=7
+            )
         plt.title('Batch Runtime per Algorithm (Lower = Better)')
         plt.xlabel('Simulation Time (minutes)')
         plt.ylabel('Batch Runtime (seconds)')
@@ -453,6 +478,7 @@ class SimulationAnalyzer:
         plt.grid(True, alpha=0.2)
         plt.tight_layout()
         return plt
+
 
     def plot_total_runtime_bar(self, metrics_list, algorithm_names):
         """Plot total run time."""
