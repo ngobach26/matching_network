@@ -4,7 +4,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import type { Ride } from "@/lib/api-client"
+import type { Ride, RideDetail } from "@/lib/api-client"
 import { Loader2, Clock, Route, CreditCard } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -13,21 +13,21 @@ interface Props {
   handlePayWithVNPAY: () => void
   isPaying: boolean
   isPayed: boolean
-  ride: Ride | null
+  ride: RideDetail | null
   onComplete: () => void
 }
 
-export function StepTransit({ ride, onComplete, handlePayWithVNPAY, isPaying,isPayed }: Props) {
+export function StepTransit({ ride, onComplete, handlePayWithVNPAY, isPaying, isPayed }: Props) {
   const [routeInfo, setRouteInfo] = useState<{ distance: string; duration: string } | null>(null)
 
   // Simulate getting route info from the map component
   useEffect(() => {
     if (ride) {
-      const estimatedDistance = ride.estimated_distance
-        ? `${ride.estimated_distance.toFixed(1)} km`
+      const estimatedDistance = ride.ride.estimated_distance
+        ? `${ride.ride.estimated_distance.toFixed(1)} km`
         : "Calculating..."
 
-      const estimatedDuration = ride.estimated_duration ? `${ride.estimated_duration} min` : "Calculating..."
+      const estimatedDuration = ride.ride.estimated_duration ? `${ride.ride.estimated_duration} min` : "Calculating..."
 
       setRouteInfo({
         distance: estimatedDistance,
@@ -61,14 +61,16 @@ export function StepTransit({ ride, onComplete, handlePayWithVNPAY, isPaying,isP
             </div>
             <div className="flex items-center">
               <Clock className="h-5 w-5 text-orange-500 mr-2" />
-              <span className="text-sm font-medium">ETA: {routeInfo.duration}</span>
+              <span className="text-sm font-medium">
+                ETA: {parseFloat(routeInfo.duration).toFixed(1)} min
+              </span>
             </div>
           </div>
         )}
 
         <div className="text-center text-sm text-muted-foreground">
-          {ride?.estimated_duration
-            ? `Estimated duration: ${ride.estimated_duration.toFixed(1)} minutes`
+          {ride?.ride.estimated_duration
+            ? `Estimated duration: ${ride.ride.estimated_duration.toFixed(1)} minutes`
             : "Enjoy your ride!"}
         </div>
       </CardContent>

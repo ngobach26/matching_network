@@ -67,7 +67,7 @@ export default function SignUpPage() {
       <div className="hidden md:block md:w-1/2 bg-orange-500">
         <div
           className="h-full w-full bg-cover bg-center"
-          style={{ backgroundImage: "url('/placeholder.svg?height=1080&width=1080')" }}
+          style={{ backgroundImage: "url('/matching.jpg')" }}
         >
           <div className="h-full w-full flex flex-col justify-center items-center bg-black bg-opacity-40 text-white p-12">
             <h1 className="text-4xl font-bold mb-4">Join SmartMatch Today</h1>

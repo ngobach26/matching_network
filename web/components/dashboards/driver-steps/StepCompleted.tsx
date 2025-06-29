@@ -3,10 +3,10 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle } from "lucide-react"
-import type { Ride } from "@/lib/api-client"
+import type { Ride, RideDetail } from "@/lib/api-client"
 
 interface StepCompletedProps {
-  ride: Ride | null
+  ride: RideDetail | null
   onNewRide: () => void
 }
 
@@ -41,19 +41,19 @@ export function StepCompleted({ ride, onNewRide }: StepCompletedProps) {
           <div className="flex justify-between">
             <span className="text-muted-foreground">Fare earned</span>
             <span className="font-medium">
-              {ride?.fare.driver_earnings ? formatCurrency(ride?.fare.driver_earnings) : formatCurrency(12750)}
+              {ride?.ride.fare.driver_earnings ? formatCurrency(ride?.ride.fare.driver_earnings) : formatCurrency(12750)}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Trip duration</span>
             <span className="font-medium">
-              {ride?.estimated_duration ? `${ride.estimated_duration.toFixed(1)} minutes` : "15 minutes"}
+              {ride?.ride.estimated_duration ? `${ride.ride.estimated_duration.toFixed(1)} minutes` : "15 minutes"}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Distance</span>
             <span className="font-medium">
-              {ride?.estimated_distance ? `${ride.estimated_distance.toFixed(1)} km` : "2.8 km"}
+              {ride?.ride.estimated_distance ? `${ride.ride.estimated_distance.toFixed(1)} km` : "2.8 km"}
             </span>
           </div>
         </div>

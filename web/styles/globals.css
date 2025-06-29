@@ -11,6 +11,7 @@ body {
     text-wrap: balance;
   }
 }
+.leaflet-container { width: 100% !important; height: 100% !important; }
 
 @layer base {
   :root {

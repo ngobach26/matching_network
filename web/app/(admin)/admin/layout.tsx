@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
@@ -11,14 +10,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { isAuthenticated, isLoading, userProfile } = useAuth()
   const router = useRouter()
 
-  // Redirect if not authenticated or not an admin
-  useEffect(() => {
-    if (!isLoading && (!isAuthenticated)) {
-      router.push("/dashboard")
-    }
-  }, [isAuthenticated, isLoading, router, userProfile])
+  // Xác định trạng thái loading:
+  const loading = isLoading || !userProfile
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!loading) {
+      // Khi đã xác thực xong
+      if (!isAuthenticated || !userProfile.roles.includes("admin")) {
+        // Không có quyền admin -> redirect NGAY
+        router.replace("/dashboard")
+      }
+    }
+    // eslint-disable-next-line
+  }, [loading, isAuthenticated, userProfile, router])
+
+  // CHỈ render loading cho tới khi xác thực xong
+  if (loading || !isAuthenticated || !userProfile.roles.includes("admin")) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-2">
@@ -29,12 +36,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     )
   }
 
+  // Chỉ render layout nếu ĐÃ xác thực xong, profile có role admin
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Admin Sidebar */}
       <AdminSidebar />
-
-      {/* Main Content */}
       <main className="flex-1 overflow-auto p-6">{children}</main>
     </div>
   )

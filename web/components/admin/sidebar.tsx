@@ -35,8 +35,8 @@ export function AdminSidebar() {
       group: "Management",
     },
     {
-      name: "Drivers Application",
-      href: "/admin/driver-applications",
+      name: "Drivers",
+      href: "/admin/drivers",
       icon: ClipboardList,
       group: "Management",
     },
@@ -46,12 +46,12 @@ export function AdminSidebar() {
       icon: Network,
       group: "Configuration",
     },
-    {
-      name: "Settings",
-      href: "/admin/settings",
-      icon: Settings,
-      group: "Configuration",
-    },
+    // {
+    //   name: "Settings",
+    //   href: "/admin/settings",
+    //   icon: Settings,
+    //   group: "Configuration",
+    // },
   ]
 
   // Group navigation items

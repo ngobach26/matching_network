@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRoleContext } from "@/context/role-context"
 import Map from "@/components/map"
 import { useEffect, useState } from "react"
+import { DriverEarning, rideAPI } from "@/lib/api-client"
 
 interface StepIdleProps {
   isAvailable: boolean
@@ -19,11 +20,6 @@ interface StepIdleProps {
   currentLocation: { lat: number; lng: number } | null
   lastLocationUpdate: Date | null
   waitingForRequests: boolean
-  todaySummary: {
-    earnings: string
-    rides: number
-    onlineHours: string
-  }
 }
 
 export function StepIdle({
@@ -36,16 +32,22 @@ export function StepIdle({
   currentLocation,
   lastLocationUpdate,
   waitingForRequests,
-  todaySummary,
 }: StepIdleProps) {
   const { getRoleData } = useRoleContext()
   const driverData = getRoleData("driver")
-
+  const [todaySummary, setTodaySummary] = useState<DriverEarning>({
+    driver_id: 0,
+    start_time: "",
+    end_time: "",
+    total_earning: 0,
+    ride_count: 0,
+  })
   // Default map center (fallback if user location is not available)
   const defaultCenter = [105.854444, 21.028511] // Ho Chi Minh City coordinates
 
   // State to track if we've attempted to get user location
   const [hasAttemptedLocation, setHasAttemptedLocation] = useState(false)
+  console.log(driverData)
 
   // Try to get user location on component mount, regardless of availability status
   useEffect(() => {
@@ -63,6 +65,25 @@ export function StepIdle({
     }
   }, [currentLocation, hasAttemptedLocation])
 
+  useEffect(() => {
+    if (driverData?.user_id) {
+      rideAPI.getDriverEarningToday(driverData.user_id)
+        .then((data: DriverEarning) => {
+          setTodaySummary(data)
+        })
+        .catch(() => {
+          setTodaySummary({
+            driver_id: driverData.user_id,
+            start_time: "",
+            end_time: "",
+            ride_count: 0,
+            total_earning: 0,
+          })
+        })
+    }
+  }, [driverData?.user_id])
+
+
   return (
     <div className="space-y-4">
       {/* Map Container with Availability Toggle */}
@@ -75,11 +96,11 @@ export function StepIdle({
             markers={
               currentLocation
                 ? [
-                    {
-                      position: [currentLocation.lng, currentLocation.lat],
-                      type: "driver",
-                    },
-                  ]
+                  {
+                    position: [currentLocation.lng, currentLocation.lat],
+                    type: "current",
+                  },
+                ]
                 : []
             }
           />
@@ -141,22 +162,28 @@ export function StepIdle({
             <div className="grid grid-cols-3 gap-2">
               <div className="flex flex-col items-center justify-center">
                 <DollarSign className="h-5 w-5 text-orange-500 mb-1" />
-                <span className="text-xl font-bold">{todaySummary.earnings}</span>
+                <span className="text-xl font-bold">
+                  {todaySummary.total_earning
+                    ? todaySummary.total_earning.toLocaleString("vi-VN", { style: "currency", currency: "VND" })
+                    : "0"}
+                </span>
                 <span className="text-xs text-muted-foreground">Earnings</span>
               </div>
               <div className="flex flex-col items-center justify-center">
                 <Car className="h-5 w-5 text-orange-500 mb-1" />
-                <span className="text-xl font-bold">{todaySummary.rides}</span>
+                <span className="text-xl font-bold">{todaySummary.ride_count || 0}</span>
                 <span className="text-xs text-muted-foreground">Rides</span>
               </div>
               <div className="flex flex-col items-center justify-center">
+                {/* Nếu sau này có số giờ online thì hiển thị ở đây, còn giờ để trống hoặc "--" */}
                 <Clock className="h-5 w-5 text-orange-500 mb-1" />
-                <span className="text-xl font-bold">{todaySummary.onlineHours}</span>
+                <span className="text-xl font-bold">--</span>
                 <span className="text-xs text-muted-foreground">Online</span>
               </div>
             </div>
           </CardContent>
         </Card>
+
       </div>
     </div>
   )

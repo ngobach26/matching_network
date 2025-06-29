@@ -8,6 +8,8 @@ import ProfileTabs from "@/components/users/profile-tabs/profile-tabs"
 import ProfileIntroduction from "@/components/users/profile-tabs/profile-introduction"
 import ProfileActivities from "@/components/users/profile-tabs/profile-activities"
 import { userAPI, rideAPI, type Profile, type Ride } from "@/lib/api-client"
+import Link from "next/link"
+
 
 export default function UserProfilePage() {
   const params = useParams()

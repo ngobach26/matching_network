@@ -47,7 +47,7 @@ TOPIC_RETRY = "ride-matching-retries"
 TOPIC_RES   = "ride-matching-results"
 TOPIC_FAIL  = "ride-matching-failed"
 
-BATCH_SEC = 5
+BATCH_SEC = 2
 MAX_RETRY = 3
 MAX_WAIT  = 100      # tổng thời gian chờ (giây)
 BATCH_SIZE = 50      # số lượng message tối đa mỗi lần poll
@@ -166,8 +166,8 @@ def flush_buffer(buf: dict) -> None:
         # Lấy config cho từng geohash
         config = get_matching_config(gh)
         algorithm = config.get("algorithm", "gale_shapley")
-        proximity_weight = config.get("proximity_weight", 1.0)
-        rating_weight = config.get("rating_weight", 1.0)
+        proximity_weight = config.get("proximity_weight", 0.7)
+        rating_weight = config.get("rating_weight", 0.3)
         price_weight = config.get("price_weight", 0.0)
         max_distance = config.get("max_distance", None)
         min_driver_rating = config.get("min_driver_rating", None)

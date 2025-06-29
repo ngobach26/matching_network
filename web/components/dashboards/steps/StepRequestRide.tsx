@@ -200,7 +200,7 @@ export function StepRequestRide({
           <Button
             className="w-full bg-orange-500 hover:bg-orange-600"
             onClick={onSubmit}
-            disabled={rideStatus !== "idle"}
+            disabled={!(rideStatus === "idle" || rideStatus === "failed")}
           >
             {rideStatus === "failed" ? (
               <>
@@ -211,6 +211,7 @@ export function StepRequestRide({
               "Find Driver"
             )}
           </Button>
+
         </CardFooter>
       </Card>
     </div>

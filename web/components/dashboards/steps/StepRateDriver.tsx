@@ -7,10 +7,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Star } from "lucide-react"
-import type { Ride } from "@/lib/api-client"
+import type { Ride, RideDetail } from "@/lib/api-client"
 
 interface Props {
-  ride: Ride | null
+  ride: RideDetail | null
   rating: number
   comment: string
   onChangeRating: (value: number) => void
@@ -51,25 +51,25 @@ export function StepRateDriver({
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Trip Fare</span>
           <span className="font-medium">
-            {ride?.fare.total_fare ? formatCurrency(ride?.fare.total_fare) : formatCurrency(15500)}
+            {ride?.ride.fare.total_fare ? formatCurrency(ride?.ride.fare.total_fare) : formatCurrency(15500)}
           </span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Driver Earning</span>
           <span className="font-medium">
-            {ride?.fare.driver_earnings ? formatCurrency(ride?.fare.driver_earnings) : formatCurrency(15500)}
+            {ride?.ride.fare.driver_earnings ? formatCurrency(ride?.ride.fare.driver_earnings) : formatCurrency(15500)}
           </span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Distance</span>
           <span className="font-medium">
-            {ride?.estimated_distance ? `${ride.estimated_distance.toFixed(1)} km` : "3.2 km"}
+            {ride?.ride.estimated_distance ? `${ride.ride.estimated_distance.toFixed(1)} km` : "3.2 km"}
           </span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Duration</span>
           <span className="font-medium">
-            {ride?.estimated_duration ? `${ride.estimated_duration.toFixed(1)} minutes` : "12 minutes"}
+            {ride?.ride.estimated_duration ? `${ride.ride.estimated_duration.toFixed(1)} minutes` : "12 minutes"}
           </span>
         </div>
 

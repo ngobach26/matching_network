@@ -6,12 +6,12 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { MapPin, Navigation, User, AlertCircle, Loader2, Clock, Route } from "lucide-react"
-import type { Ride } from "@/lib/api-client"
+import type { Ride, RideDetail } from "@/lib/api-client"
 import Map from "@/components/map"
 import { useState, useEffect } from "react"
 
 interface StepRequestedProps {
-  ride: Ride | null
+  ride: RideDetail | null
   currentLocation: { lat: number; lng: number }
   isLoadingRequest: boolean
   isProcessingDecision: boolean
@@ -39,9 +39,9 @@ export function StepRequested({
 
   // Simulate getting route info
   useEffect(() => {
-    if (ride?.estimated_distance) {
-      const estimatedDistance = `${ride.estimated_distance.toFixed(1)} km`
-      const estimatedDuration = `${Math.round(ride.estimated_distance * 3)} min`
+    if (ride?.ride.estimated_distance) {
+      const estimatedDistance = `${ride.ride.estimated_distance.toFixed(1)} km`
+      const estimatedDuration = `${Math.round(ride.ride.estimated_distance * 3)} min`
 
       setRouteInfo({
         distance: estimatedDistance,
@@ -84,9 +84,9 @@ export function StepRequested({
                 <User className="h-6 w-6 text-gray-500" />
               </div>
               <div>
-                <h3 className="font-medium">Rider #{ride.rider_id}</h3>
+                <h3 className="font-medium">{ride.rider?.name}</h3>
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <Badge className="bg-orange-500">{ride.status}</Badge>
+                  <Badge className="bg-orange-500">{ride.ride.status}</Badge>
                 </div>
               </div>
             </div>
@@ -96,25 +96,25 @@ export function StepRequested({
             {/* Map with pickup and dropoff locations */}
             <div className="w-full h-[200px] rounded-md overflow-hidden">
               <Map
-                center={[ride.pickup_location.coordinate.lng, ride.pickup_location.coordinate.lat]}
+                center={[ride.ride.pickup_location.coordinate.lng, ride.ride.pickup_location.coordinate.lat]}
                 zoom={13}
                 markers={[
                   {
                     position: [currentLocation.lng, currentLocation.lat],
-                    type: "driver",
+                    type: "current",
                   },
                   {
-                    position: [ride.pickup_location.coordinate.lng, ride.pickup_location.coordinate.lat],
-                    type: "pickup",
+                    position: [ride.ride.pickup_location.coordinate.lng, ride.ride.pickup_location.coordinate.lat],
+                    type: "start",
                   },
                   {
-                    position: [ride.dropoff_location.coordinate.lng, ride.dropoff_location.coordinate.lat],
-                    type: "dropoff",
+                    position: [ride.ride.dropoff_location.coordinate.lng, ride.ride.dropoff_location.coordinate.lat],
+                    type: "des",
                   },
                 ]}
                 route={{
-                  origin: [ride.pickup_location.coordinate.lng, ride.pickup_location.coordinate.lat],
-                  destination: [ride.dropoff_location.coordinate.lng, ride.dropoff_location.coordinate.lat],
+                  origin: [ride.ride.pickup_location.coordinate.lng, ride.ride.pickup_location.coordinate.lat],
+                  destination: [ride.ride.dropoff_location.coordinate.lng, ride.ride.dropoff_location.coordinate.lat],
                 }}
               />
             </div>
@@ -138,7 +138,7 @@ export function StepRequested({
                 <div>
                   <span className="text-sm text-muted-foreground">Pickup</span>
                   <p className="font-medium">
-                    {ride.pickup_location.name}
+                    {ride.ride.pickup_location.name}
                   </p>
                 </div>
               </div>
@@ -147,7 +147,7 @@ export function StepRequested({
                 <div>
                   <span className="text-sm text-muted-foreground">Destination</span>
                   <p className="font-medium">
-                    {ride.dropoff_location.name}
+                    {ride.ride.dropoff_location.name}
                   </p>
                 </div>
               </div>
@@ -155,15 +155,15 @@ export function StepRequested({
 
             <div className="flex justify-between">
               <span className="text-muted-foreground">Estimated Earning</span>
-              <span className="font-medium">{formatCurrency(ride.fare.driver_earnings)}</span>
+              <span className="font-medium">{formatCurrency(ride.ride.fare.driver_earnings)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Distance</span>
-              <span className="font-medium">{ride.estimated_distance?.toFixed(1)} km</span>
+              <span className="font-medium">{ride.ride.estimated_distance?.toFixed(1)} km</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Requested at</span>
-              <span className="font-medium">{new Date(ride.created_at).toLocaleTimeString()}</span>
+              <span className="font-medium">{new Date(ride.ride.created_at).toLocaleTimeString()}</span>
             </div>
           </>
         )}

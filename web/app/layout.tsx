@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { RoleProvider } from "@/context/role-context"
 import { AuthProvider } from "@/context/auth-provider"
 import { ReduxProvider } from "@/lib/redux/provider"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -24,7 +25,10 @@ export default function RootLayout({
         <ThemeProvider>
           <ReduxProvider>
             <AuthProvider>
-              <RoleProvider>{children}</RoleProvider>
+              <RoleProvider>
+                {children}
+                <Toaster />
+              </RoleProvider>
             </AuthProvider>
           </ReduxProvider>
         </ThemeProvider>

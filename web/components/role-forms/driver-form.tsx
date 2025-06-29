@@ -9,22 +9,20 @@ import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Car, ChevronRight, ChevronLeft, Check } from "lucide-react"
 import { driverAPI, RideType } from "@/lib/api-client"
+import { useRouter } from "next/navigation"
 import { useAppSelector } from "@/lib/redux/hooks"
-import { useDispatch } from "react-redux"
 
-interface DriverFormProps {
-  onSubmit: (data: any) => void
-}
 
-export function DriverForm({ onSubmit }: DriverFormProps) {
+export function DriverForm() {
   const userId = useAppSelector((state) => state.user.userId)
+  const router = useRouter()
 
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [vehicleData, setVehicleData] = useState({
-    vehicle_type: "car" as RideType,
+    vehicle_type: "car" as "car" | "bike" | "premium",
     brand: "",
     model: "",
     plate_number: "",
@@ -34,7 +32,6 @@ export function DriverForm({ onSubmit }: DriverFormProps) {
 
   const [driverData, setDriverData] = useState({
     driver_license: "",
-    status: "active" as "active" | "inactive",
   })
 
   const handleVehicleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,31 +48,13 @@ export function DriverForm({ onSubmit }: DriverFormProps) {
     setDriverData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleDriverSelectChange = (name: string, value: string) => {
-    setDriverData((prev) => ({ ...prev, [name]: value }))
-  }
-
   const handleNextStep = async () => {
     if (step === 1) {
-      // Validate vehicle data
       if (!vehicleData.model || !vehicleData.plate_number || !vehicleData.capacity) {
         setError("Please fill in all required vehicle fields")
         return
       }
-      try {
-        setLoading(true)
-        setError(null)
-
-        if (!userId) {
-          throw new Error("User ID not found")
-        }
-        setStep(2)
-      } catch (err: any) {
-        console.error("Error creating vehicle:", err)
-        setError(err.message || "Failed to create vehicle")
-      } finally {
-        setLoading(false)
-      }
+      setStep(2)
     }
   }
 
@@ -99,21 +78,21 @@ export function DriverForm({ onSubmit }: DriverFormProps) {
         throw new Error("User ID not found")
       }
 
-      const result = await driverAPI.createDriver({
+      await driverAPI.createDriver({
         user_id: userId,
         driver_license: driverData.driver_license,
-        status: driverData.status,
         vehicle: {
           vehicle_type: vehicleData.vehicle_type,
           brand: vehicleData.brand,
           model: vehicleData.model,
           plate_number: vehicleData.plate_number,
           color: vehicleData.color,
-          capacity: vehicleData.capacity,
+          capacity: Number(vehicleData.capacity),
         }
       })
-      // Call the onSubmit callback
-      onSubmit(result)
+
+      // Sau khi save thành công, reload lại page
+      window.location.reload()
     } catch (err: any) {
       console.error("Error submitting driver data:", err)
       setError(err.message || "Failed to submit driver information")
@@ -192,8 +171,7 @@ export function DriverForm({ onSubmit }: DriverFormProps) {
               <SelectContent>
                 <SelectItem value="2">2 passengers</SelectItem>
                 <SelectItem value="4">4 passengers</SelectItem>
-                <SelectItem value="6">6 passengers</SelectItem>
-                <SelectItem value="8">8 passengers</SelectItem>
+                <SelectItem value="6">7 passengers</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -202,7 +180,7 @@ export function DriverForm({ onSubmit }: DriverFormProps) {
             <Label htmlFor="vehicle_type">Vehicle Type</Label>
             <Select
               value={vehicleData.vehicle_type}
-              onValueChange={(value) => handleVehicleSelectChange("vehicle_type", value as RideType)}
+              onValueChange={(value) => handleVehicleSelectChange("vehicle_type", value)}
             >
               <SelectTrigger id="vehicle_type">
                 <SelectValue placeholder="Select vehicle type" />
@@ -210,7 +188,7 @@ export function DriverForm({ onSubmit }: DriverFormProps) {
               <SelectContent>
                 <SelectItem value="car">Car</SelectItem>
                 <SelectItem value="bike">Bike</SelectItem>
-                <SelectItem value="van">Van</SelectItem>
+                <SelectItem value="premium">Premium</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -258,23 +236,6 @@ export function DriverForm({ onSubmit }: DriverFormProps) {
               required
             />
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="status">Driver Status</Label>
-            <Select
-              value={driverData.status}
-              onValueChange={(value: "active" | "inactive") => handleDriverSelectChange("status", value)}
-            >
-              <SelectTrigger id="status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={handlePrevStep} disabled={loading}>
               <ChevronLeft className="mr-2 h-4 w-4" />

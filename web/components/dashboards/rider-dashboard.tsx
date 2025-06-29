@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import type { Ride, Driver, Location, Coordinates, FareEstimateResponse, RideType } from "@/lib/api-client"
+import type { Ride, Driver, Location, Coordinates, FareEstimateResponse, RideType, RideDetail } from "@/lib/api-client"
 import { rideAPI, driverAPI, paymentAPI } from "@/lib/api-client"
 import { useAppSelector } from "@/lib/redux/hooks"
 import { useDebounce } from "@/hooks/use-debounce"
@@ -43,7 +43,7 @@ export function RiderDashboard() {
   const [isFetchingEstimate, setIsFetchingEstimate] = useState(false)
   const [selectedRideType, setSelectedRideType] = useState<RideType>("car")
 
-  const [ride, setRide] = useState<Ride | null>(null)
+  const [ride, setRide] = useState<RideDetail | null>(null)
   const [driver, setDriver] = useState<Driver | null>(null)
 
   const [selectedRating, setSelectedRating] = useState<number>(0)
@@ -66,6 +66,8 @@ export function RiderDashboard() {
   const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null)
   const [locationError, setLocationError] = useState<string | null>(null)
   const [isLoadingLocation, setIsLoadingLocation] = useState(true)
+  const [isNewMessage, setIsNewMessage] = useState<boolean>(false)
+
 
   // Khi userId đã có, luôn set wsUrl để giữ websocket connection
   useEffect(() => {
@@ -75,7 +77,7 @@ export function RiderDashboard() {
   }, [userId])
 
   // Ngắt websocket connection chỉ khi rời trang (unmount)
-  const { isConnected, disconnect,sendMessage } = useWebSocket({
+  const { isConnected, disconnect, sendMessage } = useWebSocket({
     url: wsUrl,
     onMessage: (data) => handleWebSocketMessage(data),
     onOpen: () => console.log("WebSocket connected"),
@@ -83,7 +85,7 @@ export function RiderDashboard() {
     onError: () => setMatchError("Connection error. Please try again."),
     reconnectAttempts: 3,
   })
-  
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search)
@@ -93,6 +95,7 @@ export function RiderDashboard() {
       }
     }
   }, [])
+
 
   useEffect(() => {
     return () => {
@@ -109,16 +112,39 @@ export function RiderDashboard() {
 
       const latestRide = activeRides[activeRides.length - 1]
       setRide(latestRide)
-      if (latestRide.driver_id) {
-        const driverDetails = await driverAPI.getDriver(latestRide.driver_id)
+
+      // Cập nhật lại location cho form/map
+      if (latestRide.ride.pickup_location) {
+        setPickup(latestRide.ride.pickup_location.name || "")
+        setPickupLocation({
+          name: latestRide.ride.pickup_location.name,
+          coordinate: {
+            lat: latestRide.ride.pickup_location.coordinate.lat,
+            lng: latestRide.ride.pickup_location.coordinate.lng,
+          },
+        })
+      }
+      if (latestRide.ride.dropoff_location) {
+        setDestination(latestRide.ride.dropoff_location.name || "")
+        setDropoffLocation({
+          name: latestRide.ride.dropoff_location.name,
+          coordinate: {
+            lat: latestRide.ride.dropoff_location.coordinate.lat,
+            lng: latestRide.ride.dropoff_location.coordinate.lng,
+          },
+        })
+      }
+
+      if (latestRide.ride.driver_id) {
+        const driverDetails = await driverAPI.getDriver(latestRide.ride.driver_id)
         setDriver(driverDetails)
       }
 
       // Thiết lập UI theo trạng thái ride
-      if (latestRide.status === "accepted" || latestRide.status === "arrived") {
+      if (latestRide.ride.status === "accepted" || latestRide.ride.status === "arrived") {
         setRideStatus("pickup")
         setStep(2)
-      } else if (latestRide.status === "picked_up" || latestRide.status === "ongoing") {
+      } else if (latestRide.ride.status === "picked_up" || latestRide.ride.status === "ongoing") {
         setRideStatus("transit")
         setStep(3)
       }
@@ -132,6 +158,8 @@ export function RiderDashboard() {
       resumeOngoingRide()
     }
   }, [userId, resumeOngoingRide])
+
+  const markMessagesAsRead = () => setIsNewMessage(false);
 
   const handleNewRide = useCallback(() => {
     setRideStatus("idle")
@@ -152,26 +180,26 @@ export function RiderDashboard() {
   }, [])
 
   const handlePayWithVNPAY = async () => {
-    if (!ride || !ride._id || !ride.fare.total_fare) {
-      console.warn("Thiếu thông tin ride:", { id: ride?._id, fare: ride?.fare.total_fare })
+    if (!ride || !ride.ride._id || !ride.ride.fare.total_fare) {
+      console.warn("Thiếu thông tin ride:", { id: ride?.ride._id, fare: ride?.ride.fare.total_fare })
       return
     }
 
     setIsPaying(true)
     try {
       const { payment_url } = await paymentAPI.createVnpayPayment({
-        serviceId: ride._id,
-        amount: ride.fare.total_fare,
+        serviceId: ride.ride._id,
+        amount: ride.ride.fare.total_fare,
       })
 
       if (payment_url) {
         window.location.href = payment_url
       } else {
-        alert("Không nhận được URL thanh toán từ máy chủ.")
+        alert("Payment error")
       }
     } catch (err) {
       console.error("Payment error:", err)
-      alert("Không thể thực hiện thanh toán. Vui lòng thử lại.")
+      alert("Payment error")
     } finally {
       setIsPaying(false)
     }
@@ -182,7 +210,7 @@ export function RiderDashboard() {
     setIsSubmittingRating(true)
     try {
       await rideAPI.submitRating(
-        ride._id,
+        ride.ride._id,
         {
           rating: selectedRating,
           comment: ratingComment
@@ -202,8 +230,8 @@ export function RiderDashboard() {
       try {
         const rideDetails = await rideAPI.getRide(data.ride_id)
         setRide(rideDetails)
-        if (rideDetails.driver_id) {
-          const driverDetails = await driverAPI.getDriver(rideDetails?.driver_id)
+        if (rideDetails.ride.driver_id) {
+          const driverDetails = await driverAPI.getDriver(rideDetails?.ride.driver_id)
           setDriver(driverDetails)
         }
         setRideStatus("pickup")
@@ -212,6 +240,18 @@ export function RiderDashboard() {
         toast({ title: "Error", description: "Failed to load ride info", variant: "destructive" })
         setRideStatus("idle")
       }
+    }
+
+    if (data.event === "ride_request_failed") {
+      setRideStatus("failed");
+      setStep(1);
+      setMatchError("Không tìm được tài xế gần bạn lúc này. Vui lòng thử lại sau.");
+      toast({
+        title: "Cannot find driver",
+        description: "We cannot find driver in your current location",
+        variant: "destructive",
+      });
+      return;
     }
 
     if (data.event === "ride_status_updated") {
@@ -223,8 +263,19 @@ export function RiderDashboard() {
         setRideStatus("completed")
         setStep(4)
       }
+      if (data.status === "cancelled") {
+        setRideStatus("failed")
+        setStep(1)
+        setMatchError("Trip have been cancelled")
+        toast({
+          title: "Trip have been cancelled",
+          description: "Trip have been cancelled",
+          variant: "destructive"
+        })
+      }
     }
     if (data.type === "message" && data.data) {
+      setIsNewMessage(true)
       setMessages((msgs) => [
         ...msgs,
         {
@@ -255,7 +306,7 @@ export function RiderDashboard() {
     if (!ride || !driver || !userId) return;
     const msg = {
       type: "message",
-      ride_id: ride._id,
+      ride_id: ride.ride._id,
       receiver_id: driver.user_id,
       message: text
     };
@@ -285,7 +336,7 @@ export function RiderDashboard() {
         estimated_duration: routeInfo.duration,
         estimated_distance: routeInfo.distance,
       })
-      setRide(rideData)
+      // setRide(rideData)
       // Không cần set lại wsUrl hoặc reconnect!
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to create ride request", variant: "destructive" })
@@ -314,25 +365,40 @@ export function RiderDashboard() {
 
   useEffect(() => {
     setIsLoadingLocation(true)
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCurrentLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        })
-        setIsLoadingLocation(false)
-      },
-      (error) => {
-        let message = "Failed to get location"
-        if (error.code === error.PERMISSION_DENIED) {
-          message = "Location permission denied. Please enable location services."
-        }
-        setLocationError(message)
-        setIsLoadingLocation(false)
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-    )
-  }, [])
+    let watchId: number;
+
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          setCurrentLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+          setIsLoadingLocation(false);
+        },
+        (error) => {
+          let message = "Failed to get location"
+          if (error.code === error.PERMISSION_DENIED) {
+            message = "Location permission denied. Please enable location services."
+          }
+          setLocationError(message)
+          setIsLoadingLocation(false)
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 1000 }
+      );
+    } else {
+      setLocationError("Geolocation is not supported by this browser.");
+      setIsLoadingLocation(false);
+    }
+
+    // Cleanup để ngừng theo dõi khi rời component
+    return () => {
+      if (navigator.geolocation && watchId !== undefined) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, []);
+
 
   useEffect(() => {
     if (pickupLocation && dropoffLocation) {
@@ -352,43 +418,62 @@ export function RiderDashboard() {
           )}
 
           <Map
-            center={currentLocation ? [currentLocation.lng, currentLocation.lat] : [106.660172, 10.762622]}
-            zoom={14}
-            markers={
-              pickupLocation && dropoffLocation
-                ? [
-                  {
-                    position: currentLocation ? [currentLocation.lng, currentLocation.lat] : [106.660172, 10.762622],
-                    type: "rider",
-                  },
-                  {
-                    position: [pickupLocation.coordinate.lng, pickupLocation.coordinate.lat],
-                    type: "pickup",
-                  },
-                  {
-                    position: [dropoffLocation.coordinate.lng, dropoffLocation.coordinate.lat],
-                    type: "dropoff",
-                  },
-                ]
-                : [
-                  {
-                    position: currentLocation ? [currentLocation.lng, currentLocation.lat] : [106.660172, 10.762622],
-                    type: "rider",
-                  },
-                ]
+            center={
+              currentLocation
+                ? [currentLocation.lng, currentLocation.lat] as [number, number]
+                : [105.85202, 21.02851] as [number, number]
             }
+            zoom={14}
+            markers={(() => {
+              // Ép kiểu markers luôn
+              const markers: { position: [number, number]; type: "current" | "start" | "des" }[] = [
+                {
+                  position: currentLocation
+                    ? [currentLocation.lng, currentLocation.lat] as [number, number]
+                    : [105.85202, 21.02851] as [number, number],
+                  type: "current",
+                },
+              ];
+              if (pickupLocation) {
+                markers.push({
+                  position: [
+                    pickupLocation.coordinate.lng,
+                    pickupLocation.coordinate.lat,
+                  ] as [number, number],
+                  type: "start",
+                });
+              }
+              if (dropoffLocation) {
+                markers.push({
+                  position: [
+                    dropoffLocation.coordinate.lng,
+                    dropoffLocation.coordinate.lat,
+                  ] as [number, number],
+                  type: "des",
+                });
+              }
+              return markers;
+            })()}
             route={
               pickupLocation && dropoffLocation
                 ? {
-                  origin: [pickupLocation.coordinate.lng, pickupLocation.coordinate.lat],
-                  destination: [dropoffLocation.coordinate.lng, dropoffLocation.coordinate.lat],
+                  origin: [
+                    pickupLocation.coordinate.lng,
+                    pickupLocation.coordinate.lat,
+                  ] as [number, number],
+                  destination: [
+                    dropoffLocation.coordinate.lng,
+                    dropoffLocation.coordinate.lat,
+                  ] as [number, number],
                 }
                 : undefined
             }
             setRouteInfo={setRouteInfo}
             routeInfo={routeInfo}
-
           />
+
+
+
         </div>
 
         {locationError && (
@@ -446,6 +531,8 @@ export function RiderDashboard() {
         {step === 2 && ride && driver && (
           <StepDriverInfo
             messages={messages}
+            isNewMessage={isNewMessage}
+            setIsNewMessage={markMessagesAsRead}
             onSendMessage={sendMessageToDriver}
             myAvatar={"https://randomuser.me/api/portraits/women/68.jpg"}
             theirAvatar={"https://randomuser.me/api/portraits/men/32.jpg"}
@@ -501,6 +588,7 @@ export function RiderDashboard() {
             </DialogHeader>
             <MapSelector
               location={pickupLocation}
+              currentLocation={currentLocation}
               onLocationSelect={(location) => {
                 setPickup(location.address)
                 setPickupLocation({ name: location.address, coordinate: { lat: location.coordinates[1], lng: location.coordinates[0] } })
@@ -522,6 +610,7 @@ export function RiderDashboard() {
             </DialogHeader>
             <MapSelector
               location={dropoffLocation}
+              currentLocation={currentLocation}
               onLocationSelect={(location) => {
                 setDestination(location.address)
                 setDropoffLocation({ name: location.address, coordinate: { lat: location.coordinates[1], lng: location.coordinates[0] } })

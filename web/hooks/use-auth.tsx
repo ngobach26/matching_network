@@ -108,62 +108,85 @@ export function useAuth() {
   }
 
   // Accepts a user object instead of just email and password
-const signup = async (userData: {
-  name: string
-  email: string
-  password: string
-  phone_number: string
-  date_of_birth?: string
-}) => {
-  try {
-    // Use the authAPI to register the user
-    const response = await authAPI.signup(userData)
+  const signup = async (userData: {
+    name: string
+    email: string
+    password: string
+    phone_number: string
+    date_of_birth?: string
+  }) => {
+    try {
+      // Use the authAPI to register the user
+      const response = await authAPI.signup(userData)
 
-    // After successful signup, automatically log the user in
-    // You can still use email and password to log in
-    await login(userData.email, userData.password)
+      // After successful signup, automatically log the user in
+      // You can still use email and password to log in
+      await login(userData.email, userData.password)
 
-    return response
-  } catch (error: any) {
-    console.error("Signup error:", error)
+      return response
+    } catch (error: any) {
+      console.error("Signup error:", error)
 
-    // Extract error message from the API response if available
-    if (error.response?.data?.errors) {
-      const errorMessages = Object.entries(error.response.data.errors)
-        .map(([key, value]) => `${key} ${value}`)
-        .join(", ")
-      throw new Error(errorMessages)
+      // Extract error message from the API response if available
+      if (error.response?.data?.errors) {
+        const errorMessages = Object.entries(error.response.data.errors)
+          .map(([key, value]) => `${key} ${value}`)
+          .join(", ")
+        throw new Error(errorMessages)
+      }
+
+      throw new Error(error.message || "Failed to create account")
     }
-
-    throw new Error(error.message || "Failed to create account")
   }
-}
 
 
   const logout = async () => {
-    // Clear Redux state
-    dispatch(clearUser())
-    dispatch(clearDriver())
+    setTimeout(() => {
+      dispatch(clearUser())
+      dispatch(clearDriver())
+    }, 1000)
 
-    // Sign out from NextAuth
+    // Nếu muốn signOut ngay sau khi dispatch, thì gọi ở trong setTimeout
+
     await signOut({ redirect: false })
     router.push("/")
   }
 
+  // ====== THÊM API ĐỔI MẬT KHẨU TẠI ĐÂY ======
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+    newPasswordConfirmation: string
+  ) => {
+    try {
+      const result = await authAPI.changePassword(currentPassword, newPassword, newPasswordConfirmation)
+      return result
+    } catch (error: any) {
+      throw error
+    }
+  }
+  // ====== KẾT THÚC PHẦN THÊM ======
+
   useEffect(() => {
-    // Khi trạng thái xác thực chuyển sang "authenticated" và userProfile chưa có -> fetch profile từ API
-    if (status === "authenticated" && !userProfile) {
+    // Chỉ fetch khi trạng thái là "authenticated" và session còn hợp lệ
+    if (status === "authenticated" && !userProfile && session?.user?.id) {
       authAPI.getCurrentUser()
         .then((profile) => {
-          dispatch(setUser(profile))
+          if (profile) {
+            dispatch(setUser(profile))
+          }
         })
         .catch((err) => {
           console.error("Failed to load user profile on init", err)
         })
     }
-    // Nếu bạn lưu profile ở localStorage, có thể lấy ở đây nếu muốn
-  }, [status, userProfile, dispatch])
-  
+
+    // Nếu status là "unauthenticated" thì nên clear luôn userProfile (optional)
+    if (status === "unauthenticated" && userProfile) {
+      dispatch(clearUser())
+    }
+
+  }, [status, userProfile, session, dispatch])
 
   return {
     session,
@@ -178,5 +201,6 @@ const signup = async (userData: {
     profileError,
     fetchUserProfile: fetchUserProfileData,
     updateUserProfile: updateUserProfileData,
+    changePassword, // THÊM VÀO RETURN ĐỂ SỬ DỤNG Ở COMPONENT
   }
 }

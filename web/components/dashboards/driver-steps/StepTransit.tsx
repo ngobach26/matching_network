@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Navigation, AlertCircle, Loader2, Clock, Route } from "lucide-react"
-import type { Ride } from "@/lib/api-client"
+import type { Ride, RideDetail } from "@/lib/api-client"
 import Map from "@/components/map"
 import { useState, useEffect } from "react"
 
 interface StepTransitProps {
-  ride: Ride | null
+  ride: RideDetail | null
   currentLocation: { lat: number; lng: number }
   rideStatus: string | null
   rideStatusError: string | null
@@ -35,11 +35,11 @@ export function StepTransit({
   // Simulate getting route info from the map component
   useEffect(() => {
     if (ride) {
-      const estimatedDistance = ride.estimated_distance
-        ? `${ride.estimated_distance.toFixed(1)} km`
+      const estimatedDistance = ride.ride.estimated_distance
+        ? `${ride.ride.estimated_distance.toFixed(1)} km`
         : "Calculating..."
 
-      const estimatedDuration = ride.estimated_duration ? `${ride.estimated_duration} min` : "Calculating..."
+      const estimatedDuration = ride.ride.estimated_duration ? `${ride.ride.estimated_duration} min` : "Calculating..."
 
       setRouteInfo({
         distance: estimatedDistance,
@@ -73,10 +73,10 @@ export function StepTransit({
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-6">
-      {/* Left column: Map */}
+    <div className="flex flex-col md:flex-row gap-6 min-h-screen">
+      {/* MAP COLUMN - sửa lại giống StepPickup */}
       <div className="w-full md:w-3/5">
-        <div className="relative h-[300px] md:h-[400px] rounded-lg overflow-hidden border">
+        <div className="relative w-full h-[300px] md:h-full rounded-lg overflow-hidden border">
           {ride && (
             <Map
               center={[currentLocation.lng, currentLocation.lat]}
@@ -84,16 +84,16 @@ export function StepTransit({
               markers={[
                 {
                   position: [currentLocation.lng, currentLocation.lat],
-                  type: "driver",
+                  type: "current",
                 },
                 {
-                  position: [ride.dropoff_location.coordinate.lng, ride.dropoff_location.coordinate.lat],
-                  type: "dropoff",
+                  position: [ride.ride.dropoff_location.coordinate.lng, ride.ride.dropoff_location.coordinate.lat],
+                  type: "des",
                 },
               ]}
               route={{
                 origin: [currentLocation.lng, currentLocation.lat],
-                destination: [ride.dropoff_location.coordinate.lng, ride.dropoff_location.coordinate.lat],
+                destination: [ride.ride.dropoff_location.coordinate.lng, ride.ride.dropoff_location.coordinate.lat],
               }}
             />
           )}
@@ -125,7 +125,9 @@ export function StepTransit({
             </div>
             <div className="flex items-center">
               <Clock className="h-5 w-5 text-orange-500 mr-2" />
-              <span className="text-sm font-medium">ETA: {routeInfo.duration}</span>
+              <span className="text-sm font-medium">
+                ETA: {parseFloat(routeInfo.duration).toFixed(1)} min
+              </span>
             </div>
           </div>
         )}
@@ -136,7 +138,7 @@ export function StepTransit({
             <span className="text-sm text-muted-foreground">Destination</span>
             <p className="font-medium">
               {ride
-                ? ride.dropoff_location.name
+                ? ride.ride.dropoff_location.name
                 : "Loading destination..."}
             </p>
           </div>
@@ -144,7 +146,9 @@ export function StepTransit({
 
         <div className="flex justify-between">
           <span className="text-muted-foreground">ETA to destination</span>
-          <span className="font-medium">{routeInfo?.duration || "Calculating..."}</span>
+          <span className="font-medium">
+            {routeInfo ? `${parseFloat(routeInfo.duration).toFixed(1)} min` : "Calculating..."}
+          </span>
         </div>
 
         <div className="flex justify-between">
@@ -155,16 +159,16 @@ export function StepTransit({
         <div className="flex justify-between">
           <span className="text-muted-foreground">Fare</span>
           <span className="font-medium">
-            {ride?.fare.total_fare
-              ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(ride.fare.total_fare)
+            {ride?.ride.fare.total_fare
+              ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(ride.ride.fare.total_fare)
               : "Calculating..."}
           </span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Driver Earning</span>
           <span className="font-medium">
-            {ride?.fare.driver_earnings
-              ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(ride.fare.driver_earnings)
+            {ride?.ride.fare.driver_earnings
+              ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(ride.ride.fare.driver_earnings)
               : "Calculating..."}
           </span>
         </div>

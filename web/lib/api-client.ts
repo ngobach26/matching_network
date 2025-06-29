@@ -62,7 +62,7 @@ export interface MatchingConfig {
   algorithm: "gale_shapley" | "hungarian"
   proximity_weight: number
   rating_weight: number
-  price_weight: number
+  price_weight?: number
   max_distance?: number
   matching_timeout?: number
   min_driver_rating?: number
@@ -146,7 +146,7 @@ export interface Vehicle {
 export interface Driver {
   user_id: number;
   driver_license: string;
-  status: "active" | "inactive";
+  status: "pending" |"active" |"rejected" |"info_required" | "inactive";
   vehicle: Vehicle;
 
   total_rides?: number;
@@ -159,7 +159,6 @@ export interface Driver {
 export interface DriverCreate {
   user_id: number;
   driver_license: string;
-  status: "active" | "inactive";
   vehicle: Vehicle;
 }
 
@@ -219,8 +218,32 @@ export interface RideUpdateRequest {
 
 export interface DriverDecisionResponse {
   message: string
-  ride: Ride
+  ride: RideDetail
 }
+
+export interface RideDetail {
+  ride: Ride
+  rider: User | null
+  driver: User | null
+}
+
+export interface DriverEarning {
+  driver_id: number
+  start_time: string   // ISO format, vd: "2024-06-20T00:00:00+07:00"
+  end_time: string     // ISO format, vd: "2024-06-20T23:59:59+07:00"
+  ride_count: number
+  total_earning: number
+}
+
+export interface DriverDetail {
+  driver: Driver | null
+  user: User | null
+}
+
+export interface DriverStatusUpdate {
+  new_status: "active" | "rejected" | "info_required" | "pending" | "inactive";
+}
+
 
 // Update the login function to work with NextAuth
 export const authAPI = {
@@ -292,6 +315,22 @@ export const authAPI = {
     const response = await apiClient.patch("/api/users/me", requestBody)
     return response.data.user
   },
+
+  changePassword: async (
+    currentPassword: string,
+    newPassword: string,
+    newPasswordConfirmation: string
+  ): Promise<{ message: string }> => {
+    const requestBody = {
+      user: {
+        current_password: currentPassword,
+        password: newPassword,
+        password_confirmation: newPasswordConfirmation,
+      },
+    }
+    const response = await apiClient.patch("/api/users/password", requestBody)
+    return response.data
+  },
 }
 
 export const userAPI = {
@@ -332,6 +371,11 @@ export const driverAPI = {
     return response.data
   },
 
+  getDriverDetail: async (userId: number): Promise<DriverDetail> => {
+    const response = await apiClient.get(`api/ride/drivers/detail/${userId}`)
+    return response.data
+  },
+
   updateDriver: async (userId: number, driver: Omit<DriverUpdate, "created_at">): Promise<{ updated: boolean }> => {
     const response = await apiClient.put(`api/ride/drivers/${userId}`, driver)
     return response.data
@@ -341,6 +385,14 @@ export const driverAPI = {
     const response = await apiClient.get("api/ride/drivers/")
     return response.data
   },
+
+  updateDriverStatus: async (
+    userId: number,
+    statusUpdate: DriverStatusUpdate
+  ): Promise<{ updated: boolean }> => {
+    const response = await apiClient.post(`/api/ride/drivers/${userId}/update_status`, statusUpdate);
+    return response.data;
+  },  
 }
 
 // Ride API functions
@@ -350,20 +402,20 @@ export const rideAPI = {
     return response.data
   },
 
-  getActiveRides: async (riderId: number): Promise<Ride[]> => {
+  getActiveRides: async (riderId: number): Promise<RideDetail[]> => {
     const response = await apiClient.get(`/api/ride/rides/active?rider_id=${riderId}`)
     return response.data
   },
 
-  getDriverActiveRides: async (driver_id: number): Promise<Ride[]> => {
+  getDriverActiveRides: async (driver_id: number): Promise<RideDetail[]> => {
     const response = await apiClient.get(`/api/ride/rides/active?driver_id=${driver_id}`)
     return response.data
   },
 
-  getRide: async (rideId: string): Promise<Ride> => {
+  getRide: async (rideId: string): Promise<RideDetail> => {
     const response = await apiClient.get(`/api/ride/rides/${rideId}`)
     return response.data
-  },
+  },  
 
   getListRides: async (): Promise<Ride[]> => {
     const response = await apiClient.get(`/api/ride/rides/`)
@@ -403,10 +455,16 @@ export const rideAPI = {
   },
 
   // Lấy danh sách chuyến đi theo rider
-  getRidesByRider: async (rider_id: number): Promise<Ride[]> => {
+  getRidesByRider: async (rider_id?: number): Promise<Ride[]> => {
     const response = await apiClient.get(`/api/ride/rides/rider/${rider_id}`)
     return response.data
   },
+
+  getDriverEarningToday: async (driver_id: number): Promise<DriverEarning> => {
+    const response = await apiClient.get(`/api/ride/rides/driver/${driver_id}/earning/today`)
+    return response.data
+  },
+  
 }
 
 // Payment API
@@ -461,6 +519,20 @@ export const matchingAPI = {
   },
   listGeohash: async (): Promise<string[]> => {
     const response = await apiClient.get("/api/ride/matching-algorithm/geohash-list")
+    return response.data
+  },
+}
+
+export const s3API = {
+  getPresignedUrl: async (
+    fileName: string,
+    contentType: string
+  ): Promise<{ url: string; s3_url: string }> => {
+    // Đảm bảo endpoint đúng, ví dụ qua Kong: /api/s3/presign
+    const response = await apiClient.post("/api/users/s3/presign", {
+      file_name: fileName,
+      content_type: contentType,
+    })
     return response.data
   },
 }

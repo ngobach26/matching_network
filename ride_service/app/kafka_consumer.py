@@ -64,9 +64,14 @@ async def consume_kafka_matching():
                     "reason": reason,
                 }
 
-                # 🛠️ Update ride_request document in MongoDB
+                try:
+                    mongo_id = ObjectId(ride_id)
+                except Exception:
+                    print(f"❌ ride_id {ride_id} is not a valid ObjectId", flush=True)
+                    return  # hoặc continue
+
                 update_result = await rides_collection.update_one(
-                    {"_id": ride_id},
+                    {"_id": mongo_id},
                     {
                         "$set": {
                             "status": "cancelled",

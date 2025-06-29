@@ -6,8 +6,10 @@ Rails.application.routes.draw do
   },
   controllers: {
     sessions: "users/sessions",
-    registrations: "users/registrations"
+    registrations: "users/registrations",
+    passwords: "users/passwords"
   }
+  post "s3/presign", to: "s3#presign"
 
   # Health check
   get "up" => "rails/health#show", as: :rails_health_check

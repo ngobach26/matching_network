@@ -2,6 +2,10 @@ from datetime import datetime
 from typing import Optional, Literal
 from pydantic import BaseModel, Field, ConfigDict
 
+from typing import List
+
+from app.models.common import UserInfo
+
 class Coordinates(BaseModel):
     lat: float
     lng: float
@@ -88,3 +92,8 @@ class RideUpdateRequest(BaseModel):
 class DriverDecisionRequest(BaseModel):
     driver_id: str
     accept: bool
+
+class RideResponse(BaseModel):
+    ride: Ride
+    rider: Optional[UserInfo] = None
+    driver: Optional[UserInfo] = None

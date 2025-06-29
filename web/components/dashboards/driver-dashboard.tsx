@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { rideAPI, type Ride } from "@/lib/api-client"
+import { rideAPI, RideDetail, type Ride } from "@/lib/api-client"
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks"
 
 // Import step components
@@ -10,6 +10,7 @@ import { StepRequested } from "@/components/dashboards/driver-steps/StepRequeste
 import { StepPickup } from "@/components/dashboards/driver-steps/StepPickup"
 import { StepTransit } from "@/components/dashboards/driver-steps/StepTransit"
 import { StepCompleted } from "@/components/dashboards/driver-steps/StepCompleted"
+import { Fascinate } from "next/font/google"
 // Define ride status type based on the state machine
 type RideStatusType = "accepted" | "arrived" | "picked_up" | "ongoing" | "completed" | "cancelled"
 
@@ -27,9 +28,10 @@ export function DriverDashboard() {
   const [lastLocationUpdate, setLastLocationUpdate] = useState<Date | null>(null)
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number }>({ lat: 21.028511, lng: 105.854444 })
   const [locationError, setLocationError] = useState<string | null>(null)
+  const [isNewMessage, setIsNewMessage] = useState<boolean>(false)
 
   // New state for ride request handling
-  const [currentRide, setCurrentRide] = useState<Ride | null>(null)
+  const [currentRide, setCurrentRide] = useState<RideDetail | null>(null)
   const [currentRideStatus, setCurrentRideStatus] = useState<RideStatusType | null>(null)
   const [isLoadingRequest, setIsLoadingRequest] = useState(false)
   const [isProcessingDecision, setIsProcessingDecision] = useState(false)
@@ -40,74 +42,109 @@ export function DriverDashboard() {
   const wsRef = useRef<WebSocket | null>(null)
   const locationIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Today's summary data (could be fetched from API in a real app)
-  const todaySummary = {
-    earnings: "200,124",
-    rides: 3,
-    onlineHours: "1.5h",
-  }
+  useEffect(() => {
+    if (!userId) return; // Không làm gì nếu chưa có user
 
-  // Get current location using browser's Geolocation API
-  const getCurrentLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser")
-      return Promise.reject(new Error("Geolocation not supported"))
-    }
-
-    return new Promise<{ lat: number; lng: number }>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const location = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          }
-          setCurrentLocation(location)
-          setLocationError(null)
-          resolve(location)
-        },
-        (error) => {
-          console.error("Error getting location:", error)
-          let errorMessage = "Failed to get your location"
-
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = "Location permission denied. Please enable location services."
-              break
-            case error.POSITION_UNAVAILABLE:
-              errorMessage = "Location information is unavailable."
-              break
-            case error.TIMEOUT:
-              errorMessage = "Location request timed out."
-              break
-          }
-
-          setLocationError(errorMessage)
-          reject(new Error(errorMessage))
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-      )
-    })
-  }, [])
-
-  const sendLocationUpdate = useCallback(async () => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+    // Hàm async để resume ride nếu có
+    const resumeLastActiveRide = async () => {
       try {
-        // Get real location
-        const location = await getCurrentLocation()
+        const rides: RideDetail[] = await rideAPI.getDriverActiveRides(userId);
+        // Lấy ride cuối cùng (thường là ride đang chạy nhất)
+        const lastActiveRide = rides.length > 0 ? rides[rides.length - 1] : null;
 
-        const locationUpdate = {
-          type: "location_update",
-          lat: location.lat,
-          lng: location.lng,
+        // Không có ride nào, hoặc ride đã hoàn thành/hủy thì thôi
+        if (!lastActiveRide || lastActiveRide.ride.status === "completed" || lastActiveRide.ride.status === "cancelled") {
+          setCurrentRide(null);
+          setCurrentRideStatus(null);
+          setRideStatus("idle");
+          setWaitingForRequests(true);
+          return;
         }
 
-        wsRef.current.send(JSON.stringify(locationUpdate))
-        setLastLocationUpdate(new Date())
+        // Có ride đang hoạt động -> resume state
+        setCurrentRide(lastActiveRide);
+        setCurrentRideStatus(lastActiveRide.ride.status as RideStatusType);
+
+        // Cập nhật UI theo status của ride
+        switch (lastActiveRide.ride.status) {
+          case "accepted":
+          case "arrived":
+            setRideStatus("pickup");
+            break;
+          case "picked_up":
+          case "ongoing":
+            setRideStatus("transit");
+            break;
+          default:
+            setRideStatus("idle");
+            setWaitingForRequests(true);
+        }
+
+        // Nếu chưa có kết nối WebSocket thì bật lại availability
+        if (!wsRef.current) {
+          handleToggleAvailability();
+        }
+      } catch (err) {
+        console.error("Error resuming last active ride:", err);
+      }
+    };
+
+    resumeLastActiveRide();
+    // Có thể chỉ nên gọi khi mount hoặc userId đổi
+  }, [userId]);
+
+  useEffect(() => {
+    setIsUpdating(true);
+    let watchId: number;
+
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          setCurrentLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+          setLocationError(null);
+          setIsUpdating(false);
+        },
+        (error) => {
+          let message = "Failed to get location";
+          if (error.code === error.PERMISSION_DENIED) {
+            message = "Location permission denied. Please enable location services.";
+          }
+          setLocationError(message);
+          setIsUpdating(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 1000 }
+      );
+    } else {
+      setLocationError("Geolocation is not supported by this browser.");
+      setIsUpdating(false);
+    }
+
+    // Cleanup để ngừng theo dõi khi rời component
+    return () => {
+      if (navigator.geolocation && watchId !== undefined) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, []);
+  const markMessagesAsRead = () => setIsNewMessage(false);
+
+  const sendLocationUpdate = useCallback(async () => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentLocation) {
+      try {
+        wsRef.current.send(JSON.stringify({
+          type: "location_update",
+          lat: currentLocation.lat,
+          lng: currentLocation.lng,
+        }));
+        setLastLocationUpdate(new Date());
       } catch (error) {
-        console.error("Failed to send location update:", error)
+        console.error("Failed to send location update:", error);
       }
     }
-  }, [getCurrentLocation])
+  }, [currentLocation]);
 
   // Handle WebSocket disconnection
   const handleDisconnection = useCallback(
@@ -130,7 +167,7 @@ export function DriverDashboard() {
     },
     [isAvailable],
   )
-  
+
   // Handle WebSocket messages
   const handleWebSocketMessage = useCallback(async (data: any) => {
     console.log("Processing WebSocket message:", data)
@@ -166,6 +203,7 @@ export function DriverDashboard() {
     }
 
     if (data.type === "message" && data.data) {
+      setIsNewMessage(true)
       setMessages(msgs => [
         ...msgs,
         {
@@ -196,15 +234,15 @@ export function DriverDashboard() {
   useEffect(() => {
     const resumeOngoingRide = async () => {
       if (!userId) return
-  
+
       try {
-        const ride = (await rideAPI.getDriverActiveRides(userId)).at(-1)
-        if (!ride || ride.status === "completed" || ride.status === "cancelled") return
-  
-        setCurrentRide(ride)
+        const response = (await rideAPI.getDriverActiveRides(userId)).at(-1)
+        if (!response || response.ride.status === "completed" || response.ride.status === "cancelled") return
+
+        setCurrentRide(response)
         // setCurrentRideRequest(ride.ride_request)
-        setCurrentRideStatus(ride.status as RideStatusType)
-  
+        setCurrentRideStatus(response.ride.status as RideStatusType)
+
         // Bật lại WebSocket nếu chưa bật
         if (!wsRef.current) {
           handleToggleAvailability()
@@ -213,7 +251,7 @@ export function DriverDashboard() {
         console.error("Error resuming ride:", err)
       }
     }
-  
+
     resumeOngoingRide()
   }, [userId])
 
@@ -252,16 +290,6 @@ export function DriverDashboard() {
 
       // Handle WebSocket connection based on new availability status
       if (newAvailability) {
-        // Check for location permission first
-        try {
-          await getCurrentLocation()
-        } catch (error) {
-          // If location permission is denied, don't proceed
-          setIsUpdating(false)
-          setIsAvailable(false) // Revert back to unavailable
-          return
-        }
-
         // Driver is becoming available - connect to WebSocket
         setConnectionStatus("connecting")
         setConnectionError(null)
@@ -293,8 +321,8 @@ export function DriverDashboard() {
             // Send initial location update
             sendLocationUpdate()
 
-            // Set up interval for location updates every 30 seconds
-            locationIntervalRef.current = setInterval(sendLocationUpdate, 30000)
+            // Set up interval for location updates every 5 seconds
+            locationIntervalRef.current = setInterval(sendLocationUpdate, 5000)
           }
 
           ws.onmessage = (event) => {
@@ -351,11 +379,11 @@ export function DriverDashboard() {
   }
 
   const sendMessageToRider = (text: string) => {
-    if (!currentRide || !userId || !currentRide.rider_id) return;
+    if (!currentRide || !userId || !currentRide.ride.rider_id) return;
     const msg = {
       type: "message",
-      ride_id: currentRide._id,
-      receiver_id: currentRide.rider_id,
+      ride_id: currentRide.ride._id,
+      receiver_id: currentRide.ride.rider_id,
       message: text,
     };
     wsRef.current?.readyState === 1 && wsRef.current.send(JSON.stringify(msg));
@@ -384,7 +412,7 @@ export function DriverDashboard() {
 
       if (accept) {
         // Submit driver's decision to accept the ride
-        const response = await rideAPI.submitDriverDecision(currentRide._id, userId, true)
+        const response = await rideAPI.submitDriverDecision(currentRide.ride._id, userId, true)
 
         console.log("Decision response:", response)
 
@@ -396,7 +424,7 @@ export function DriverDashboard() {
         }
       } else {
         // Submit driver's decision to decline the ride
-        await rideAPI.submitDriverDecision(currentRide._id, userId, false)
+        await rideAPI.submitDriverDecision(currentRide.ride._id, userId, false)
 
         // Reset state
         setCurrentRide(null)
@@ -420,7 +448,7 @@ export function DriverDashboard() {
 
     try {
       console.log(currentRide)
-      const response = await rideAPI.updateRideStatus(currentRide._id, action)
+      const response = await rideAPI.updateRideStatus(currentRide.ride._id, action)
       console.log(`Ride status updated to ${action}:`, response)
 
       // Update the ride status in the UI
@@ -498,7 +526,6 @@ export function DriverDashboard() {
             currentLocation={currentLocation}
             lastLocationUpdate={lastLocationUpdate}
             waitingForRequests={waitingForRequests}
-            todaySummary={todaySummary}
           />
         )
       case "requested":
@@ -516,6 +543,8 @@ export function DriverDashboard() {
       case "pickup":
         return (
           <StepPickup
+            isNewMessage={isNewMessage}
+            setIsNewMessage={markMessagesAsRead}
             ride={currentRide}
             currentLocation={currentLocation}
             rideStatus={currentRideStatus}
@@ -559,13 +588,12 @@ export function DriverDashboard() {
             currentLocation={currentLocation}
             lastLocationUpdate={lastLocationUpdate}
             waitingForRequests={waitingForRequests}
-            todaySummary={todaySummary}
           />
         )
     }
   }
 
   return <div className="space-y-6">
-      {renderStep()}
-    </div>
+    {renderStep()}
+  </div>
 }

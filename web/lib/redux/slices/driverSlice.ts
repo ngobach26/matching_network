@@ -3,51 +3,50 @@ import { driverAPI, DriverCreate, type Driver, type Vehicle } from "@/lib/api-cl
 import type { RootState } from "../store"
 
 interface DriverState {
-  profile: Driver | null
-  vehicle: Vehicle | null
+  driverProfile: Driver | null
   status: "idle" | "loading" | "succeeded" | "failed"
   error: string | null
   isRegistered: boolean
 }
 
 const initialState: DriverState = {
-  profile: null,
-  vehicle: null,
+  driverProfile: null,
   status: "idle",
   error: null,
   isRegistered: false,
 }
 
-export const fetchDriverProfile = createAsyncThunk("driver/fetchProfile", async (_, { getState, rejectWithValue }) => {
-  try {
-    const userId = (getState() as RootState).user.userId
-    if (!userId) {
-      return rejectWithValue("User ID not found")
-    }
-
-    const driverData = await driverAPI.getDriver(userId)
-
-    // Fetch vehicle data
+// Lấy driver profile
+export const fetchDriverProfile = createAsyncThunk(
+  "driver/fetchProfile",
+  async (_, { getState, rejectWithValue }) => {
     try {
-      return { driver: driverData}
-    } catch (vehicleError) {
-      console.error("Error fetching vehicle data:", vehicleError)
-      return { driver: driverData, vehicle: null }
-    }
-  } catch (error: any) {
-    if (error.response && error.response.status === 404) {
-      return rejectWithValue("Not registered as driver")
-    }
-    return rejectWithValue(error.message || "Failed to fetch driver profile")
-  }
-})
+      const userId = (getState() as RootState).user.userId
+      if (!userId) {
+        return rejectWithValue("User ID not found")
+      }
 
+      const driverData = await driverAPI.getDriver(userId)
+      return { driver: driverData }
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+        return rejectWithValue("Not registered as driver")
+      }
+      return rejectWithValue(error.message || "Failed to fetch driver profile")
+    }
+  }
+)
+
+// Tạo driver profile
 export const createDriverProfile = createAsyncThunk(
   "driver/createProfile",
   async (
-    data: {
-      driverData: Omit<DriverCreate, "user_id" | "vehicle">;
-      vehicleData: Vehicle;
+    {
+      driver_license,
+      vehicleData
+    }: {
+      driver_license: string
+      vehicleData: Vehicle
     },
     { getState, rejectWithValue }
   ) => {
@@ -59,13 +58,13 @@ export const createDriverProfile = createAsyncThunk(
 
       const driverPayload: DriverCreate = {
         user_id: userId,
-        driver_license: data.driverData.driver_license,
-        status: data.driverData.status,
-        vehicle: data.vehicleData,
+        driver_license,
+        vehicle: vehicleData,
       }
 
-      const driverResponse = await driverAPI.createDriver(driverPayload)
+      await driverAPI.createDriver(driverPayload)
 
+      // Lấy lại profile sau khi tạo
       const driverData = await driverAPI.getDriver(userId)
 
       return { driver: driverData }
@@ -80,8 +79,7 @@ const driverSlice = createSlice({
   initialState,
   reducers: {
     clearDriver: (state) => {
-      state.profile = null
-      state.vehicle = null
+      state.driverProfile = null
       state.isRegistered = false
       state.status = "idle"
       state.error = null
@@ -94,14 +92,15 @@ const driverSlice = createSlice({
       })
       .addCase(fetchDriverProfile.fulfilled, (state, action) => {
         state.status = "succeeded"
-        state.profile = action.payload.driver
-        state.isRegistered = true
+        state.driverProfile = action.payload.driver
+        state.isRegistered = !!action.payload.driver
       })
       .addCase(fetchDriverProfile.rejected, (state, action) => {
         state.status = "failed"
         state.error = action.payload as string
         if (action.payload === "Not registered as driver") {
           state.isRegistered = false
+          state.driverProfile = null
         }
       })
       .addCase(createDriverProfile.pending, (state) => {
@@ -109,8 +108,8 @@ const driverSlice = createSlice({
       })
       .addCase(createDriverProfile.fulfilled, (state, action) => {
         state.status = "succeeded"
-        state.profile = action.payload.driver
-        state.isRegistered = true
+        state.driverProfile = action.payload.driver
+        state.isRegistered = !!action.payload.driver
       })
       .addCase(createDriverProfile.rejected, (state, action) => {
         state.status = "failed"

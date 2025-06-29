@@ -5,6 +5,7 @@ import { createContext, useContext, useState, useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { fetchDriverProfile } from "@/lib/redux/slices/driverSlice"
 
+// Các role hiện có
 export type Role = "rider" | "driver" | "reviewer" | "candidate"
 
 interface RoleContextType {
@@ -13,7 +14,7 @@ interface RoleContextType {
   hasRole: (role: Role) => boolean
   addRole: (role: Role) => void
   removeRole: (role: Role) => void
-  getRoleData: (role: Role) => any // Add this function
+  getRoleData: (role: Role) => any
   updateRole?: (role: Role, data: any) => void // Make this optional
 }
 
@@ -23,27 +24,27 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   const [roles, setRoles] = useState<Role[]>([])
   const dispatch = useAppDispatch()
   const { userId } = useAppSelector((state) => state.user)
-  const { profile: driverProfile, vehicle: driverVehicle } = useAppSelector((state) => state.driver)
+  const { driverProfile } = useAppSelector((state) => state.driver)
 
   // Load roles when userId changes
   useEffect(() => {
     if (userId) {
       loadRoles(userId)
     }
+    // eslint-disable-next-line
   }, [userId])
 
   // Update roles based on profiles in Redux
   useEffect(() => {
     const newRoles: Role[] = []
-
-    if (driverProfile) {
-      newRoles.push("driver")
-    }
-
-    // Only update if there are changes to avoid infinite loops
-    if (newRoles.length > 0 && !newRoles.every((role) => roles.includes(role))) {
+    if (driverProfile) newRoles.push("driver")
+    // ... handle other roles if you support
+    if (
+      newRoles.length > 0 &&
+      !newRoles.every((role) => roles.includes(role))
+    ) {
       setRoles((prevRoles) => {
-        const filteredRoles = prevRoles.filter((role) => role !== "driver" && role !== "rider")
+        const filteredRoles = prevRoles.filter((role) => !["driver", "rider"].includes(role))
         return [...filteredRoles, ...newRoles]
       })
     }
@@ -51,45 +52,25 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 
   const loadRoles = async (userId: number) => {
     try {
-      // Fetch driver and rider profiles from API
-      dispatch(fetchDriverProfile())
-
-      // Note: This is a simplified implementation
-      // In a real app, you might need to fetch other roles as well
+      // Fetch driver profile; add others as needed
+      await dispatch(fetchDriverProfile())
     } catch (error) {
       console.error("Error loading roles:", error)
     }
   }
 
-  const hasRole = (role: Role): boolean => {
-    return roles.includes(role)
-  }
-
+  const hasRole = (role: Role): boolean => roles.includes(role)
   const addRole = (role: Role) => {
-    if (!roles.includes(role)) {
-      setRoles([...roles, role])
-    }
+    if (!roles.includes(role)) setRoles([...roles, role])
   }
-
   const removeRole = (role: Role) => {
     setRoles(roles.filter((r) => r !== role))
   }
 
-  // Add the getRoleData function
+  // ĐÃ SỬA: driverProfile luôn có vehicle (không cần merge vehicle nữa)
   const getRoleData = (role: Role) => {
-    // if (role === "rider") {
-    //   return riderProfile
-    // }
-    if (role === "driver") {
-      // Combine driver profile with vehicle data to match the expected format
-      if (driverProfile && driverVehicle) {
-        return {
-          ...driverProfile,
-          vehicle: driverVehicle,
-        }
-      }
-      return driverProfile
-    }
+    if (role === "driver") return driverProfile
+    // ... handle other roles (rider, reviewer, candidate) if bạn support
     return null
   }
 

@@ -18,8 +18,8 @@ interface MapProps {
   center: [number, number] // [longitude, latitude]
   zoom?: number
   markers?: Array<{
-    position: [number, number] // [longitude, latitude]
-    type: "pickup" | "dropoff" | "driver" | "rider"
+    position: [number, number]
+    type: "current" | "start" | "des"
   }>
   route?: {
     origin: [number, number] // [longitude, latitude]
@@ -199,30 +199,33 @@ export default function Map({ center, zoom = 13, markers = [], route, setRouteIn
 
       // Add new markers
       markers.forEach((marker) => {
+        // Chỉ render đúng 3 loại marker
+        if (!["current", "start", "des"].includes(marker.type)) return
+
         const el = document.createElement("div")
         el.className = "marker"
 
-        let iconHtml = ""
-
         switch (marker.type) {
-          case "pickup":
-            iconHtml = renderToStaticMarkup(<HiLocationMarker color="#22c55e" size={24} />)
-            break
-          case "dropoff":
-            iconHtml = renderToStaticMarkup(<TbMapPinOff color="#ef4444" size={24} />)
-            break
-          case "driver":
-            iconHtml = renderToStaticMarkup(<GiScooter color="#f97316" size={24} />)
-            break
-          case "rider":
-            el.innerHTML = renderToStaticMarkup(<FaUserAlt color="#22c55e" size={16} />)
-            el.style.backgroundColor = "white"
+          case "current":
+            // Chấm tròn xanh viền trắng như Google Maps
+            el.style.width = "18px"
+            el.style.height = "18px"
+            el.style.background = "#22c55e"
+            el.style.border = "4px solid white"
             el.style.borderRadius = "50%"
-            el.style.border = "2px solid #22c55e"
+            el.style.boxShadow = "0 0 4px rgba(34,197,94,0.6)"
+            el.style.display = "block"
+            el.style.position = "relative"
+            break
+          case "start":
+            // Pin xanh
+            el.innerHTML = renderToStaticMarkup(<MapPin color="#22c55e" size={28} />);
+            break
+          case "des":
+            // Pin đỏ
+            el.innerHTML = renderToStaticMarkup(<MapPin color="#ef4444" size={28} />);
             break
         }
-
-        el.innerHTML = iconHtml
 
         const newMarker = new mapboxgl.Marker(el)
           .setLngLat(marker.position)
@@ -230,11 +233,6 @@ export default function Map({ center, zoom = 13, markers = [], route, setRouteIn
 
         markersRef.current.push(newMarker)
       })
-
-      // Add route if provided
-      if (route) {
-        addRouteToMap(route.origin, route.destination)
-      }
     }
 
     if (map.current.loaded()) {
@@ -259,10 +257,11 @@ export default function Map({ center, zoom = 13, markers = [], route, setRouteIn
 
   // Update route when route prop changes
   useEffect(() => {
-    if (map.current && route && map.current.loaded()) {
-      addRouteToMap(route.origin, route.destination)
-    }
-  }, [route, addRouteToMap])
+    if (!map.current) return;
+    if (!route || !route.origin || !route.destination) return;
+  
+    addRouteToMap(route.origin, route.destination);
+  }, [route, addRouteToMap]);
 
   return (
     <div className="relative w-full h-full">

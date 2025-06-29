@@ -8,7 +8,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Bell, User, Settings, LogOut, Search, MessageCircle } from "lucide-react"
+import { Bell, User, Settings, LogOut, Search, MessageCircle, Clock } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import NotificationPopover from "./notification/notification-popover"
+import { deleteCookie } from "cookies-next"
 
 export function Topbar() {
   const pathname = usePathname()
@@ -32,7 +33,6 @@ export function Topbar() {
 
   const handleLogout = async () => {
     await logout()
-    router.push("/")
   }
 
   const handleSearch = (e: React.FormEvent) => {
@@ -95,6 +95,10 @@ export function Topbar() {
               <DropdownMenuItem onClick={() => router.push("/profile")}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/history")}>
+                <Clock className="mr-2 h-4 w-4" />
+                <span>Activity History</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push("/settings")}>
                 <Settings className="mr-2 h-4 w-4" />

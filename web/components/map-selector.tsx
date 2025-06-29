@@ -14,6 +14,7 @@ interface MapSelectorProps {
   onLocationSelect: (location: { address: string; coordinates: [number, number] }) => void
   initialAddress?: string
   confirmButtonText?: string
+  currentLocation: Coordinates | null
   location?: Location | null
 }
 
@@ -21,33 +22,17 @@ export function MapSelector({
   onLocationSelect,
   confirmButtonText = "Confirm Location",
   location = null,
+  currentLocation
 }: MapSelectorProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const marker = useRef<mapboxgl.Marker | null>(null)
 
   const [loading, setLoading] = useState(true)
-  const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null)
   const [selectedLocation, setSelectedLocation] = useState<{
     address: string
     coordinates: [number, number]
   } | null>(null)
-
-  // Get browser location
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const coords: [number, number] = [position.coords.longitude, position.coords.latitude]
-          setCurrentLocation(coords)
-        },
-        (error) => {
-          console.error("Error getting current location:", error)
-          setLoading(false)
-        },
-      )
-    }
-  }, [])
 
   // Initialize Map
   useEffect(() => {
@@ -59,7 +44,7 @@ export function MapSelector({
     if (location) {
       initialCenter = [location.coordinate.lng, location.coordinate.lat]
     } else if (currentLocation) {
-      initialCenter = currentLocation
+      initialCenter = [currentLocation.lng, currentLocation.lat]
     }
 
     map.current = new mapboxgl.Map({
@@ -123,7 +108,7 @@ export function MapSelector({
       essential: true,
     })
 
-    updateMarkerPosition(currentLocation)
+    updateMarkerPosition([currentLocation.lng, currentLocation.lat])
   }
 
   const handleConfirmLocation = () => {

@@ -3,12 +3,10 @@
 import { useState, useEffect } from "react"
 import { matchingAPI } from "@/lib/api-client"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Slider } from "@/components/ui/slider"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertCircle, Info } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
@@ -20,12 +18,9 @@ export default function MatchingAlgorithmPage() {
   // Config logic
   const [matchingAlgorithm, setMatchingAlgorithm] = useState<"gale_shapley" | "hungarian">("gale_shapley")
   const [proximityWeight, setProximityWeight] = useState<number[]>([70])
-  const [ratingWeight, setRatingWeight] = useState<number[]>([50])
-  const [priceWeight, setPriceWeight] = useState<number[]>([30])
+  const [ratingWeight, setRatingWeight] = useState<number[]>([30])
   const [maxDistance, setMaxDistance] = useState<string>("10")
-  const [timeout, setTimeoutValue] = useState<string>("30")
   const [minDriverRating, setMinDriverRating] = useState<string>("4.0")
-  const [enableAdvancedSettings, setEnableAdvancedSettings] = useState<boolean>(false)
   const [saving, setSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState("")
 
@@ -43,27 +38,40 @@ export default function MatchingAlgorithmPage() {
     fetchGeohashes()
   }, [])
 
-  // Khi đổi geohash sẽ fetch config và set lại UI
   useEffect(() => {
     const fetchConfig = async () => {
       if (!selectedGeohash) return
       try {
         const res = await matchingAPI.getConfig(selectedGeohash)
         const cfg = res.config || res
-        setMatchingAlgorithm(cfg.algorithm || "gale_shapley")
-        setProximityWeight([cfg.proximity_weight !== undefined ? Math.round(cfg.proximity_weight * 100) : 70])
-        setRatingWeight([cfg.rating_weight !== undefined ? Math.round(cfg.rating_weight * 100) : 50])
-        setPriceWeight([cfg.price_weight !== undefined ? Math.round(cfg.price_weight * 100) : 30])
-        setMaxDistance(cfg.max_distance !== undefined && cfg.max_distance !== null ? String(cfg.max_distance) : "10")
-        setTimeoutValue(cfg.matching_timeout !== undefined && cfg.matching_timeout !== null ? String(cfg.matching_timeout) : "30")
-        setMinDriverRating(cfg.min_driver_rating !== undefined && cfg.min_driver_rating !== null ? String(cfg.min_driver_rating) : "4.0")
+
+        setMatchingAlgorithm(cfg.algorithm === "hungarian" ? "hungarian" : "gale_shapley")
+
+        setProximityWeight([
+          typeof cfg.proximity_weight === "number"
+            ? Math.round(cfg.proximity_weight * 100)
+            : 70
+        ])
+        setRatingWeight([
+          typeof cfg.rating_weight === "number"
+            ? Math.round(cfg.rating_weight * 100)
+            : 30
+        ])
+        setMaxDistance(
+          cfg.max_distance !== undefined && cfg.max_distance !== null && !isNaN(cfg.max_distance)
+            ? String(cfg.max_distance)
+            : "10"
+        )
+        setMinDriverRating(
+          cfg.min_driver_rating !== undefined && cfg.min_driver_rating !== null && !isNaN(cfg.min_driver_rating)
+            ? String(cfg.min_driver_rating)
+            : "4.0"
+        )
       } catch (err) {
         setMatchingAlgorithm("gale_shapley")
         setProximityWeight([70])
-        setRatingWeight([50])
-        setPriceWeight([30])
+        setRatingWeight([30])
         setMaxDistance("10")
-        setTimeoutValue("30")
         setMinDriverRating("4.0")
       }
     }
@@ -80,9 +88,7 @@ export default function MatchingAlgorithmPage() {
         algorithm: matchingAlgorithm,
         proximity_weight: proximityWeight[0] / 100,
         rating_weight: ratingWeight[0] / 100,
-        price_weight: priceWeight[0] / 100,
         max_distance: parseFloat(maxDistance),
-        matching_timeout: parseFloat(timeout),
         min_driver_rating: minDriverRating === "none" ? undefined : parseFloat(minDriverRating),
       })
       setSaveMessage("✅ Configuration saved!")
@@ -197,27 +203,12 @@ export default function MatchingAlgorithmPage() {
             </div>
             <p className="text-sm text-muted-foreground">How important is the driver's rating in the matching process</p>
           </div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label htmlFor="priceWeight">Price Weight (%)</Label>
-              <Input
-                id="priceWeight"
-                type="number"
-                min={0}
-                max={100}
-                value={priceWeight[0]}
-                onChange={e => setPriceWeight([parseInt(e.target.value) || 0])}
-                className="w-24 text-right"
-              />
-            </div>
-            <p className="text-sm text-muted-foreground">How important is the ride price in the matching process</p>
-          </div>
-          {proximityWeight[0] + ratingWeight[0] + priceWeight[0] !== 100 ? (
+          {proximityWeight[0] + ratingWeight[0] !== 100 ? (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Invalid Weights</AlertTitle>
               <AlertDescription>
-                <span className="font-semibold text-red-500">The sum of all weights must equal 100%.</span> Current sum: {proximityWeight[0] + ratingWeight[0] + priceWeight[0]}%
+                <span className="font-semibold text-red-500">The sum of all weights must equal 100%.</span> Current sum: {proximityWeight[0] + ratingWeight[0]}%
               </AlertDescription>
             </Alert>
           ) : (
@@ -232,7 +223,6 @@ export default function MatchingAlgorithmPage() {
         </CardContent>
       </Card>
 
-
       <Card>
         <CardHeader>
           <CardTitle>Matching Constraints</CardTitle>
@@ -243,11 +233,6 @@ export default function MatchingAlgorithmPage() {
             <Label htmlFor="maxDistance">Maximum Matching Distance (meters)</Label>
             <Input id="maxDistance" type="number" value={maxDistance} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxDistance(e.target.value)} />
             <p className="text-sm text-muted-foreground">Maximum distance between rider and driver for a match to be considered</p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="timeout">Matching Timeout (seconds)</Label>
-            <Input id="timeout" type="number" value={timeout} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTimeoutValue(e.target.value)} />
-            <p className="text-sm text-muted-foreground">Maximum time to wait for an optimal match before fallback</p>
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -270,66 +255,6 @@ export default function MatchingAlgorithmPage() {
         </CardContent>
       </Card>
 
-      {/* <Card>
-        <CardHeader>
-          <CardTitle>Advanced Settings</CardTitle>
-          <CardDescription>Configure advanced matching parameters</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="enableAdvanced">Enable Advanced Settings</Label>
-              <p className="text-sm text-muted-foreground">
-                Warning: These settings can significantly impact matching performance
-              </p>
-            </div>
-            <Switch id="enableAdvanced" checked={enableAdvancedSettings} onCheckedChange={setEnableAdvancedSettings} />
-          </div>
-          {enableAdvancedSettings && (
-            <>
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Warning</AlertTitle>
-                <AlertDescription>
-                  Changing these settings may affect the stability and performance of the matching system. Proceed with caution.
-                </AlertDescription>
-              </Alert>
-              <div className="space-y-2">
-                <Label htmlFor="batchSize">Batch Processing Size</Label>
-                <Input id="batchSize" type="number" defaultValue="50" />
-                <p className="text-sm text-muted-foreground">
-                  Number of ride requests to process in a single batch
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="retryAttempts">Retry Attempts</Label>
-                <Input id="retryAttempts" type="number" defaultValue="3" />
-                <p className="text-sm text-muted-foreground">
-                  Number of times to retry matching if initial attempt fails
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="fallbackStrategy">Fallback Strategy</Label>
-                <Select defaultValue="nearest">
-                  <SelectTrigger id="fallbackStrategy">
-                    <SelectValue placeholder="Select strategy" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="nearest">Nearest Available</SelectItem>
-                    <SelectItem value="highest-rated">Highest Rated</SelectItem>
-                    <SelectItem value="balanced">Balanced</SelectItem>
-                    <SelectItem value="none">No Fallback</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground">
-                  Strategy to use when optimal matching cannot be found
-                </p>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card> */}
-
       <div className="flex gap-4 items-center">
         <Button
           className="bg-orange-500 hover:bg-orange-600"
@@ -337,7 +262,7 @@ export default function MatchingAlgorithmPage() {
           disabled={
             saving ||
             !selectedGeohash ||
-            proximityWeight[0] + ratingWeight[0] + priceWeight[0] !== 100
+            proximityWeight[0] + ratingWeight[0] !== 100
           }
         >
           {saving ? "Saving..." : "Save All Settings"}

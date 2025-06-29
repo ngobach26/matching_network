@@ -13,9 +13,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
 
 export default function SettingsPage() {
-  const { isAuthenticated, isLoading, userProfile, updateUserProfile, profileLoading } = useAuth()
+  const { isAuthenticated, isLoading, userProfile, updateUserProfile, profileLoading, changePassword } = useAuth()
   const router = useRouter()
 
+  // Profile form states
   const [form, setForm] = useState({
     name: "",
     phone_number: "",
@@ -27,6 +28,14 @@ export default function SettingsPage() {
   })
   const [successMsg, setSuccessMsg] = useState("")
   const [errorMsg, setErrorMsg] = useState("")
+
+  // Password change states
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [passwordSuccess, setPasswordSuccess] = useState("")
+  const [passwordError, setPasswordError] = useState("")
+  const [passwordLoading, setPasswordLoading] = useState(false)
 
   // Đồng bộ state form với userProfile
   useEffect(() => {
@@ -58,11 +67,40 @@ export default function SettingsPage() {
     setErrorMsg("")
     setSuccessMsg("")
     try {
-      // Chỉ truyền các trường đã khai báo lên API
       await updateUserProfile({ ...form })
       setSuccessMsg("Profile updated successfully!")
     } catch (err) {
       setErrorMsg("Failed to update profile.")
+    }
+  }
+
+  // Xử lý đổi mật khẩu
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPasswordSuccess("")
+    setPasswordError("")
+
+    // Kiểm tra xác nhận password
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords do not match.")
+      return
+    }
+    if (!currentPassword || !newPassword) {
+      setPasswordError("Please fill in all fields.")
+      return
+    }
+
+    setPasswordLoading(true)
+    try {
+      await changePassword(currentPassword, newPassword, confirmPassword)
+      setPasswordSuccess("Password updated successfully!")
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+    } catch (err: any) {
+      setPasswordError(err?.message || "Failed to update password.")
+    } finally {
+      setPasswordLoading(false)
     }
   }
 
@@ -102,7 +140,7 @@ export default function SettingsPage() {
                   </Alert>
                 )}
                 {successMsg && (
-                  <Alert variant="success">
+                  <Alert variant="default">
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
                     <AlertDescription>{successMsg}</AlertDescription>
                   </Alert>
@@ -146,26 +184,6 @@ export default function SettingsPage() {
                       onChange={handleChange}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="avatar_url">Avatar URL</Label>
-                    <Input
-                      id="avatar_url"
-                      name="avatar_url"
-                      value={form.avatar_url}
-                      onChange={handleChange}
-                      placeholder="https://example.com/avatar.png"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cover_image_url">Cover Image URL</Label>
-                    <Input
-                      id="cover_image_url"
-                      name="cover_image_url"
-                      value={form.cover_image_url}
-                      onChange={handleChange}
-                      placeholder="https://example.com/cover.png"
-                    />
-                  </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="bio">Bio</Label>
                     <Textarea
@@ -196,23 +214,61 @@ export default function SettingsPage() {
                 <CardTitle>Password</CardTitle>
                 <CardDescription>Update your password</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="current-password">Current Password</Label>
-                  <Input id="current-password" type="password" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">New Password</Label>
-                  <Input id="new-password" type="password" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm New Password</Label>
-                  <Input id="confirm-password" type="password" />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button className="bg-orange-500 hover:bg-orange-600">Update Password</Button>
-              </CardFooter>
+              <form onSubmit={handleChangePassword}>
+                <CardContent className="space-y-4">
+                  {passwordError && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="w-4 h-4" />
+                      <AlertDescription>{passwordError}</AlertDescription>
+                    </Alert>
+                  )}
+                  {passwordSuccess && (
+                    <Alert variant="default">
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                      <AlertDescription>{passwordSuccess}</AlertDescription>
+                    </Alert>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="current-password">Current Password</Label>
+                    <Input
+                      id="current-password"
+                      type="password"
+                      value={currentPassword}
+                      onChange={e => setCurrentPassword(e.target.value)}
+                      autoComplete="current-password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      autoComplete="new-password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      autoComplete="new-password"
+                    />
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button
+                    className="bg-orange-500 hover:bg-orange-600"
+                    type="submit"
+                    disabled={passwordLoading}
+                  >
+                    {passwordLoading ? "Updating..." : "Update Password"}
+                  </Button>
+                </CardFooter>
+              </form>
             </Card>
           </TabsContent>
         </Tabs>

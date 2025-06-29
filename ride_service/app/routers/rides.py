@@ -1,26 +1,28 @@
 from typing import List, Optional
 from datetime import datetime
 import pygeohash as gh
-from fastapi import APIRouter, HTTPException,Query,Path
+from fastapi import APIRouter, HTTPException,Query,Path,Depends,Request,Body
 from app.models import Ride, RideCreate, RideUpdateRequest, RatingCreate, DriverDecisionRequest
 from app.database import rides_collection, drivers_collection
 from bson import ObjectId
-from fastapi import Body
 from app.state_machine.ride_state_machine import RideStateMachine
 from app.redis_client import unlock_driver, sync_driver_rating
 from app.kafka_client import send_ride_request_to_kafka, notify_rider_match_found,send_ride_event_to_kafka
 from app.utils import parse_ride
-from app.internal_api import create_invoice_via_user_service
+from app.user_service_client import user_service_client
+from app.models import *
+from datetime import datetime, timedelta, timezone
 
 router = APIRouter()
 
-@router.get("/active", response_model=List[Ride])
-def list_active_rides(
+@router.get("/active", response_model=List[RideResponse])
+async def list_active_rides(
+    request: Request,
     rider_id: Optional[int] = Query(None),
     driver_id: Optional[int] = Query(None),
 ):
     query = {
-        "status": {"$in": ["pending","accepted", "arrived", "picked_up", "ongoing"]}
+        "status": {"$in": ["accepted", "arrived", "picked_up", "ongoing"]}
     }
 
     if rider_id is not None:
@@ -30,23 +32,88 @@ def list_active_rides(
 
     rides = list(rides_collection.find(query))
 
-    return [parse_ride(ride) for ride in rides]
+    # Lấy token từ request để truyền sang user service
+    auth_header = request.headers.get("Authorization")
+    
+    ride_responses = []
+    for ride_data in rides:
+        ride = parse_ride(ride_data)
+        
+        # Lấy thông tin rider
+        rider_info = None
+        if ride.rider_id:
+            try:
+                rider_info_data = await user_service_client.get_user_by_id(ride.rider_id, auth_header)
+                rider_info = UserInfo(**rider_info_data.get("user", {}))
+            except Exception:
+                rider_info = None
+
+        # Lấy thông tin driver (nếu có)
+        driver_info = None
+        if ride.driver_id:
+            try:
+                driver_info_data = await user_service_client.get_user_by_id(ride.driver_id, auth_header)
+                driver_info = UserInfo(**driver_info_data.get("user", {}))
+            except Exception:
+                driver_info = None
+
+        ride_responses.append(
+            RideResponse(
+                ride=ride,
+                rider=rider_info,
+                driver=driver_info
+            )
+        )
+    
+    return ride_responses
 
 
-@router.get("/{ride_id}", response_model=Ride)
-def get_ride(ride_id: str):
+@router.get("/{ride_id}", response_model=RideResponse)
+async def get_ride(ride_id: str, request: Request):
     try:
-        ride = rides_collection.find_one({"_id": ObjectId(ride_id)})
+        ride_data = rides_collection.find_one({"_id": ObjectId(ride_id)})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid ride_id")
 
-    if not ride:
+    if not ride_data:
         raise HTTPException(status_code=404, detail="Ride not found")
 
-    return parse_ride(ride)
+    ride = parse_ride(ride_data)
+
+    # Lấy token từ request gốc để truyền sang user service
+    auth_header = request.headers.get("Authorization")
+    
+    # Lấy thông tin rider
+    rider_info = None
+    if ride.rider_id:
+        try:
+            rider_info_data = await user_service_client.get_user_by_id(ride.rider_id, auth_header)
+            rider_info = UserInfo(**rider_info_data.get("user", {}))
+        except Exception:
+            # Có thể log lỗi hoặc bỏ qua nếu user service lỗi
+            rider_info = None
+
+    # Lấy thông tin driver (nếu có)
+    driver_info = None
+    if ride.driver_id:
+        try:
+            driver_info_data = await user_service_client.get_user_by_id(ride.driver_id, auth_header)
+            driver_info = UserInfo(**driver_info_data.get("user", {}))
+        except Exception:
+            driver_info = None
+
+    return RideResponse(
+        ride=ride,
+        rider=rider_info,
+        driver=driver_info
+    )
 
 @router.post("/{ride_id}/status")
-async def update_ride_status(ride_id: str, action: str = Body(..., embed=True)):
+async def update_ride_status(
+    ride_id: str,
+    request: Request,
+    action: str = Body(..., embed=True)
+):
     try:
         ride_data = rides_collection.find_one({"_id": ObjectId(ride_id)})
     except Exception:
@@ -66,17 +133,28 @@ async def update_ride_status(ride_id: str, action: str = Body(..., embed=True)):
         raise HTTPException(status_code=400, detail=f"Invalid action: {action}")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-    
+
     invoice_result = None
 
+    # Lấy auth header từ request để truyền sang user_service
+    auth_header = request.headers.get("Authorization")
+
+    # Nếu ride hoàn thành, unlock driver, tạo invoice
     if ride.status == "completed" and ride.driver_id is not None:
         await unlock_driver(ride.driver_id)
-        # Gọi user service để tạo invoice
         try:
-            invoice_result = await create_invoice_via_user_service(ride)
+            invoice_result = await user_service_client.create_invoice(ride, auth_header)
+            # Set payment_status to "paid" if no error
+            if not invoice_result or "error" not in invoice_result:
+                ride.payment_status = "paid"
         except Exception as e:
-            # Bạn có thể log lỗi hoặc trả về cho FE nếu muốn
             invoice_result = {"error": f"Could not create invoice: {str(e)}"}
+
+    # Xử lý khi ride bị huỷ
+    if ride.status == "cancelled" and ride.driver_id is not None:
+        # Mở khoá tài xế nếu đã nhận chuyến
+        await unlock_driver(ride.driver_id)
+        # Nếu muốn, có thể gửi notification cho rider/driver tại đây
 
     # send event ra kafka
     send_ride_event_to_kafka(ride)
@@ -150,7 +228,7 @@ async def match_driver(request: RideCreate):
     return ride_out
 
 @router.post("/{ride_id}/decision")
-async def driver_decision(ride_id: str, data: DriverDecisionRequest):
+async def driver_decision(ride_id: str, data: DriverDecisionRequest, request: Request):
     driver_id = data.driver_id
     decision = data.accept
     try:
@@ -169,7 +247,7 @@ async def driver_decision(ride_id: str, data: DriverDecisionRequest):
             {"_id": ObjectId(ride_id)},
             {"$set": {
                 "status": "accepted",
-                "driver_id": driver_id,
+                "driver_id": int(driver_id),
                 "matched_at": datetime.now()
             }}
         )
@@ -179,9 +257,32 @@ async def driver_decision(ride_id: str, data: DriverDecisionRequest):
 
         notify_rider_match_found(rider_id, ride_id)
 
+        # Lấy token từ request gốc để truyền sang user service
+        auth_header = request.headers.get("Authorization")
+        
+        # Lấy thông tin rider
+        rider_info = None
+        try:
+            rider_info_data = await user_service_client.get_user_by_id(updated_ride["rider_id"], auth_header)
+            rider_info = UserInfo(**rider_info_data.get("user", {}))
+        except Exception:
+            rider_info = None
+
+        # Lấy thông tin driver
+        driver_info = None
+        try:
+            driver_info_data = await user_service_client.get_user_by_id(updated_ride.get("driver_id"), auth_header)
+            driver_info = UserInfo(**driver_info_data.get("user", {}))
+        except Exception:
+            driver_info = None
+
         return {
             "message": "✅ Accepted and matched",
-            "ride": parse_ride(updated_ride)
+            "ride": RideResponse(
+                ride=parse_ride(updated_ride),
+                rider=rider_info,
+                driver=driver_info
+            )
         }
 
     else:
@@ -234,8 +335,14 @@ async def submit_rating(
     if not driver:
         raise HTTPException(status_code=404, detail="Driver not found")
 
-    current_avg = driver.get("rating_average", 0.0)
-    current_count = driver.get("rating_count", 0)
+    current_avg = driver.get("rating_average")
+    if current_avg is None:
+        current_avg = 0.0
+
+    current_count = driver.get("rating_count")
+    if current_count is None:
+        current_count = 0
+
 
     # Cập nhật lại giá trị trung bình và số lượt lên MongoDB
     new_total = current_avg * current_count + rating.rating
@@ -264,3 +371,36 @@ def get_rides_by_driver(driver_id: int):
 def get_rides_by_rider(rider_id: int):
     rides = list(rides_collection.find({"rider_id": rider_id}))
     return [parse_ride(ride) for ride in rides]
+
+@router.get("/driver/{driver_id}/earning/today")
+def driver_earning_today(driver_id: int):
+    now = datetime.now(timezone.utc).astimezone()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+
+    # Query các chuyến đã hoàn thành và đã trả tiền hôm nay
+    rides = list(rides_collection.find({
+        "driver_id": driver_id,
+        "status": "completed",
+        "end_at": {
+            "$gte": today_start,
+            "$lt": today_end
+        }
+    }))
+
+    # Tổng hợp earnings
+    total_earning = 0.0
+    ride_count = 0
+
+    for ride in rides:
+        fare = ride.get("fare", {})
+        earning = fare.get("driver_earnings", 0)
+        total_earning += earning
+        ride_count += 1
+
+    return {
+        "driver_id": driver_id,
+        "date": today_start.date().isoformat(),
+        "ride_count": ride_count,
+        "total_earning": total_earning
+    }
