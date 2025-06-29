@@ -36,27 +36,25 @@ docker-compose exec user-service bundle install
 You can either run all in one:
 
 ```bash
-docker-compose exec user-service rails db:prepare
-docker-compose exec user-service rails db:seed
+docker compose exec user-service bin/rails db:prepare
+docker compose exec user-service bin/rails db:seed
 ```
 
 Or do it step-by-step:
 
 ```bash
-docker-compose exec user-service rails db:create
-docker-compose exec user-service rails db:migrate
-docker-compose exec user-service rails db:seed
+docker compose exec user-service bin/rails db:create
+docker compose exec user-service bin/rails db:migrate
+docker compose exec user-service bin/rails db:seed
 ```
 
-> 🔁 Replace `user-service` with your actual Rails service name if different.
+```bash
+docker compose exec ride-service python seed_drivers.py
+```
 
----
-
-## 🌱 Seed Data
-
-The `db:seed` command will insert initial roles, test users, and default settings required for local development.
-
----
+```bash
+docker compose exec ride-service python seed_drivers.py
+```
 
 ## 🛠️ Useful Commands
 
@@ -74,6 +72,41 @@ docker-compose up --build
 ```
 
 ---
+
+## Environment Variables Setup
+
+Create a `.env` file in your project from .env.sample file and add the following variables:
+
+### How to obtain these variables:
+
+- **AUTH_SECRET_KEY**:  
+  Generate a random secret string for JWT authentication.  
+  Example: Use `openssl rand -hex 32` in your terminal, or use an online generator like https://randomkeygen.com/.
+
+- **VNP_TMN_CODE** and **VNP_HASH_SECRET**:  
+  These are provided by VNPAY when you register for a merchant account. Log in to your VNPAY merchant portal to find them.
+
+- **FRONTEND_BASE_URL**:  
+  The base URL of your frontend application.  
+  For local development, use `http://localhost:3000`.  
+  For production, use your actual deployed frontend URL.
+
+- **AWS_REGION**:  
+  The AWS region where your S3 bucket is hosted (e.g., `ap-southeast-1`).  
+  You can find this information in your AWS S3 dashboard.
+
+- **AWS_BUCKET**:  
+  The name of your S3 bucket, visible in the AWS S3 dashboard.
+
+- **AWS_ACCESS_KEY_ID** and **AWS_SECRET_ACCESS_KEY**:  
+  Create these in the AWS IAM Management Console.  
+  - Go to IAM → Users → Add user (enable programmatic access).  
+  - Assign permissions (e.g., AmazonS3FullAccess or your custom policy).  
+  - After creating the user, you will see the access key ID and secret access key.
+
+**Note:**  
+Never share your `.env` file or commit it to your repository to keep your credentials secure.
+
 
 ## 🔗 Notes
 
